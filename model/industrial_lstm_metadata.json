@@ -1,0 +1,111 @@
+{
+  "model": "PyTorch Industrial LSTM",
+  "dataset": "mechsense_compatible_2000.csv",
+  "target": "Machine failure",
+  "sequence_length": 30,
+  "features": [
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]",
+    "TWF",
+    "HDF",
+    "PWF",
+    "OSF",
+    "RNF"
+  ],
+  "numeric_features": [
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]"
+  ],
+  "failure_type_features": [
+    "TWF",
+    "HDF",
+    "PWF",
+    "OSF",
+    "RNF"
+  ],
+  "threshold": 0.24000000000000005,
+  "rows": 2000,
+  "machines": 20,
+  "train_machines": [
+    "M001",
+    "M002",
+    "M003",
+    "M005",
+    "M006",
+    "M007",
+    "M011",
+    "M012",
+    "M014",
+    "M016",
+    "M017",
+    "M020"
+  ],
+  "validation_machines": [
+    "M004",
+    "M009",
+    "M013",
+    "M018"
+  ],
+  "test_machines": [
+    "M008",
+    "M010",
+    "M015",
+    "M019"
+  ],
+  "split_strategy": "machine-wise fixed split: 12 train / 4 validation / 4 test",
+  "metrics": {
+    "validation": {
+      "accuracy": 0.9190140845070423,
+      "precision": 0.9130434782608695,
+      "recall": 0.6885245901639344,
+      "f1": 0.7850467289719626,
+      "pr_auc": 0.8405618667114189,
+      "roc_auc": 0.9038447401308535,
+      "confusion_matrix": [
+        [
+          219,
+          4
+        ],
+        [
+          19,
+          42
+        ]
+      ],
+      "rows": 284,
+      "failures": 61,
+      "predicted_failures": 46,
+      "classification_report": "              precision    recall  f1-score   support\n\n         0.0       0.92      0.98      0.95       223\n         1.0       0.91      0.69      0.79        61\n\n    accuracy                           0.92       284\n   macro avg       0.92      0.84      0.87       284\nweighted avg       0.92      0.92      0.91       284\n"
+    },
+    "test": {
+      "accuracy": 0.8767605633802817,
+      "precision": 0.9024390243902439,
+      "recall": 0.5441176470588235,
+      "f1": 0.6788990825688074,
+      "pr_auc": 0.781362717883468,
+      "roc_auc": 0.8774509803921569,
+      "confusion_matrix": [
+        [
+          212,
+          4
+        ],
+        [
+          31,
+          37
+        ]
+      ],
+      "rows": 284,
+      "failures": 68,
+      "predicted_failures": 41,
+      "classification_report": "              precision    recall  f1-score   support\n\n         0.0       0.87      0.98      0.92       216\n         1.0       0.90      0.54      0.68        68\n\n    accuracy                           0.88       284\n   macro avg       0.89      0.76      0.80       284\nweighted avg       0.88      0.88      0.87       284\n"
+    }
+  },
+  "positive_rows": 339,
+  "negative_rows": 1661,
+  "deployment_scaler_note": "Mean/scale learned from training machines; scale widened only to keep the existing Flask 4-sigma domain guard compatible with the complete 2,000-row deployment dataset."
+}

@@ -1,0 +1,2102 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyze Machine · MechSense{% endblock %}
+{% block heading %}Machine Analysis{% endblock %}
+
+{% block content %}
+
+{% if machine %}
+
+<section class="panel">
+
+    <div class="panel-head">
+
+        <div>
+            <span class="eyebrow">MACHINE ANALYSIS</span>
+
+            <h2>
+                Machine MS-{{ machine.engineId }}
+            </h2>
+
+            <p>
+                Sensor readings, LSTM failure prediction and machine condition trends.
+            </p>
+        </div>
+
+        <span id="liveMachineState" class="api-state loading">
+            <i></i>
+            Loading
+        </span>
+
+    </div>
+
+
+    <!-- =====================================================
+         MAIN METRICS
+    ====================================================== -->
+
+    <div class="metric-grid">
+
+        <!-- FAILURE RISK -->
+
+        <div
+            id="riskCard"
+            class="metric-card
+            {% if machine.status == 'critical' %}
+                bad
+            {% elif machine.status == 'warning' %}
+                warn
+            {% else %}
+                good
+            {% endif %}"
+        >
+
+            <span>FAILURE RISK</span>
+
+            <strong id="riskPct">
+                {{ machine.failureProbabilityPct }}%
+            </strong>
+
+            <em id="riskStatus">
+                {{ machine.status|upper }}
+            </em>
+
+        </div>
+
+
+        <!-- HEALTH SCORE -->
+
+        <div class="metric-card">
+
+            <span>HEALTH SCORE</span>
+
+            <strong id="healthScore">
+                {{ machine.healthScore }}%
+            </strong>
+
+            <em>
+                Current condition
+            </em>
+
+        </div>
+
+
+        <!-- RUL -->
+
+        <div class="metric-card">
+
+            <span>
+                ESTIMATED RUL @ CURRENT CYCLE
+            </span>
+
+            <strong id="rulValue">
+
+                {% if machine.estimatedRUL is not none %}
+                    {{ machine.estimatedRUL }}
+                {% else %}
+                    —
+                {% endif %}
+
+            </strong>
+
+            <em id="rulUnit">
+
+                {% if machine.estimatedRUL is not none %}
+                    cycles remaining · cycle {{ machine.cycle }}
+                {% else %}
+                    RUL unavailable
+                {% endif %}
+
+            </em>
+
+        </div>
+
+
+        <!-- CURRENT CYCLE -->
+
+        <div class="metric-card">
+
+            <span>LATEST CYCLE</span>
+
+            <strong id="cycleValue">
+                {{ machine.cycle }}
+            </strong>
+
+            <em>
+                {{ machine.readings }} readings available
+            </em>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     MAINTENANCE / COST
+========================================================= -->
+
+<section
+    id="costSection"
+    class="metric-grid"
+
+    {% if machine.status == 'healthy' %}
+        style="display:none;"
+    {% endif %}
+>
+
+    <div class="metric-card money">
+
+        <span>
+            EST. MAINTENANCE COST
+        </span>
+
+        <strong id="costValue">
+
+            ₹{{ '{:,.0f}'.format(
+                machine.maintenanceProfile.estimatedCostINR or 0
+            ) }}
+
+        </strong>
+
+        <em>
+            Planning estimate
+        </em>
+
+    </div>
+
+
+    <div class="metric-card exposure">
+
+        <span>
+            POTENTIAL FAILURE EXPOSURE
+        </span>
+
+        <strong id="exposureValue">
+
+            ₹{{ '{:,.0f}'.format(
+                machine.maintenanceProfile.potentialFailureCostINR or 0
+            ) }}
+
+        </strong>
+
+        <em>
+            Potential avoidable loss
+        </em>
+
+    </div>
+
+
+    <div class="metric-card">
+
+        <span>
+            ESTIMATED SAVINGS
+        </span>
+
+        <strong id="savingValue">
+
+            ₹{{ '{:,.0f}'.format(
+                machine.maintenanceProfile.estimatedSavingsINR or 0
+            ) }}
+
+        </strong>
+
+        <em>
+            Early intervention estimate
+        </em>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     HEALTHY NOTICE
+========================================================= -->
+
+<section
+    id="healthyNotice"
+    class="panel"
+
+    {% if machine.status != 'healthy' %}
+        style="display:none;"
+    {% endif %}
+>
+
+    <div class="notice success">
+
+        <b>
+            Machine is healthy.
+        </b>
+
+        No maintenance cost is estimated.
+
+        Use the readings and graphs below for routine monitoring.
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     SENSOR + RISK
+========================================================= -->
+
+<section class="grid-2">
+
+
+    <!-- SENSOR TREND -->
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Sensor Trend
+                </h2>
+
+                <p>
+                    Latest readings used for machine analysis
+                </p>
+
+            </div>
+
+            <span class="tag">
+                {{ readings|length }} readings
+            </span>
+
+        </div>
+
+        <div style="height:300px;">
+
+            <canvas id="sensorTrendChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- RISK -->
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Machine Risk
+                </h2>
+
+                <p>
+                    LSTM prediction for this machine
+                </p>
+
+            </div>
+
+        </div>
+
+        <div style="height:300px;">
+
+            <canvas id="riskChart"></canvas>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     RUL BY CYCLE
+========================================================= -->
+
+{% if rul_history %}
+
+<section class="panel">
+
+    <div class="panel-head">
+
+        <div>
+
+            <h2>
+                RUL by Cycle
+            </h2>
+
+            <p>
+                Model estimate recomputed at each cycle using
+                the latest available readings.
+            </p>
+
+        </div>
+
+        <span class="tag">
+            Current cycle {{ machine.cycle }}
+        </span>
+
+    </div>
+
+    <div style="height:280px;">
+
+        <canvas id="rulCycleChart"></canvas>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+
+<!-- =========================================================
+     TEMPERATURE + RPM
+========================================================= -->
+
+<section class="grid-2">
+
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Temperature
+                </h2>
+
+                <p>
+                    Thermal behavior across the sequence
+                </p>
+
+            </div>
+
+        </div>
+
+        <div style="height:260px;">
+
+            <canvas id="temperatureChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Rotational Speed
+                </h2>
+
+                <p>
+                    RPM behavior across the sequence
+                </p>
+
+            </div>
+
+        </div>
+
+        <div style="height:260px;">
+
+            <canvas id="rpmChart"></canvas>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     TORQUE + TOOL WEAR
+========================================================= -->
+
+<section class="grid-2">
+
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Torque
+                </h2>
+
+                <p>
+                    Torque behavior across the sequence
+                </p>
+
+            </div>
+
+        </div>
+
+        <div style="height:260px;">
+
+            <canvas id="torqueChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Tool Wear
+                </h2>
+
+                <p>
+                    Tool-wear behavior across the sequence
+                </p>
+
+            </div>
+
+        </div>
+
+        <div style="height:260px;">
+
+            <canvas id="wearChart"></canvas>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     SENSOR READINGS + MAINTENANCE
+========================================================= -->
+
+<section class="grid-2">
+
+
+    <!-- SENSOR TABLE -->
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Latest Sensor Readings
+                </h2>
+
+                <p>
+                    Raw values supplied to the analysis view.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="table-scroll">
+
+            <table class="data-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Cycle
+                        </th>
+
+                        <th>
+                            Temperature
+                        </th>
+
+                        <th>
+                            Sensor 2
+                        </th>
+
+                        <th>
+                            RPM / Sensor 11
+                        </th>
+
+                        <th>
+                            Torque / Sensor 15
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for r in readings %}
+
+                    <tr>
+
+                        <td>
+                            {{ r.get('cycle', loop.index) }}
+                        </td>
+
+                        <td>
+
+                            {{
+                                r.get(
+                                    'sensor_4',
+                                    r.get(
+                                        'Process temperature [K]',
+                                        '—'
+                                    )
+                                )
+                            }}
+
+                        </td>
+
+                        <td>
+
+                            {{
+                                r.get(
+                                    'sensor_2',
+                                    r.get(
+                                        'Air temperature [K]',
+                                        '—'
+                                    )
+                                )
+                            }}
+
+                        </td>
+
+                        <td>
+
+                            {{
+                                r.get(
+                                    'sensor_11',
+                                    r.get(
+                                        'Rotational speed [rpm]',
+                                        '—'
+                                    )
+                                )
+                            }}
+
+                        </td>
+
+                        <td>
+
+                            {{
+                                r.get(
+                                    'sensor_15',
+                                    r.get(
+                                        'Tool wear [min]',
+                                        '—'
+                                    )
+                                )
+                            }}
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="5">
+
+                            No readings available for this machine.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- MAINTENANCE RECOMMENDATION -->
+
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+
+                <h2>
+                    Maintenance Recommendation
+                </h2>
+
+                <p>
+                    Based on the current LSTM risk classification.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <h3 id="advisorAction">
+            {{ machine.maintenance.action }}
+        </h3>
+
+
+        <p
+            id="advisorReason"
+            class="plan-reason"
+        >
+            {{ machine.maintenance.reason }}
+        </p>
+
+
+        <div class="summary-list">
+
+
+            <!-- PRIORITY -->
+
+            <div>
+
+                <span>
+                    Priority
+                </span>
+
+                <b id="advisorBadge">
+                    {{ machine.maintenance.priority }}
+                </b>
+
+            </div>
+
+
+            <!-- STATUS -->
+
+            <div>
+
+                <span>
+                    Status
+                </span>
+
+                <b
+                    id="statusBadge"
+                    class="status {{ machine.status }}"
+                >
+                    {{ machine.status|upper }}
+                </b>
+
+            </div>
+
+
+            <!-- FAILURE -->
+
+            <div>
+
+                <span>
+                    Predicted failure
+                </span>
+
+                <b id="predictionText">
+
+                    {% if machine.predictedFailure %}
+                        Yes
+                    {% else %}
+                        No
+                    {% endif %}
+
+                </b>
+
+            </div>
+
+
+            <!-- COST -->
+
+            <div>
+
+                <span>
+                    Maintenance cost
+                </span>
+
+                <b id="summaryCost">
+
+                    {% if machine.status == 'healthy' %}
+
+                        Not required
+
+                    {% else %}
+
+                        ₹{{ '{:,.0f}'.format(
+                            machine.maintenanceProfile.estimatedCostINR or 0
+                        ) }}
+
+                    {% endif %}
+
+                </b>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+{% else %}
+
+
+<!-- =========================================================
+     NO MACHINE
+========================================================= -->
+
+<section class="panel">
+
+    <div class="notice error">
+
+        No machine is available in the active dataset.
+
+    </div>
+
+    <a
+        class="btn secondary"
+        href="/machines"
+    >
+        Back to Machines
+    </a>
+
+</section>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts %}
+
+{% if machine %}
+
+<script>
+
+/*
+ * ============================================================
+ * MECHSENSE MACHINE ANALYSIS
+ * ============================================================
+ *
+ * Important:
+ *
+ * This page NEVER changes a machine to HEALTHY merely because
+ * an API request fails.
+ *
+ * Backend/API status is authoritative.
+ *
+ * Uploaded CSV:
+ *
+ * LSTM probability
+ *       ↓
+ * backend status
+ *       ↓
+ * CRITICAL / WARNING / HEALTHY
+ *       ↓
+ * this page
+ *
+ * ============================================================
+ */
+
+
+/* ------------------------------------------------------------
+   SERVER DATA
+------------------------------------------------------------ */
+
+const readings =
+    {{ readings|tojson }};
+
+const rulHistory =
+    {{ rul_history|default([])|tojson }};
+
+let currentMachine =
+    {{ machine|tojson }};
+
+const engineId =
+    {{ machine.engineId|tojson }};
+
+
+/* ------------------------------------------------------------
+   NUMBER HELPER
+------------------------------------------------------------ */
+
+function toNumber(value) {
+
+    const number = Number(value);
+
+    if (Number.isFinite(number)) {
+
+        return number;
+
+    }
+
+    return null;
+
+}
+
+
+/* ------------------------------------------------------------
+   SENSOR FIELD HELPER
+------------------------------------------------------------ */
+
+function getSensorValue(row, names) {
+
+    for (let i = 0; i < names.length; i++) {
+
+        const name = names[i];
+
+        if (
+            row &&
+            row[name] !== undefined &&
+            row[name] !== null &&
+            row[name] !== ""
+        ) {
+
+            return toNumber(row[name]);
+
+        }
+
+    }
+
+    return null;
+
+}
+
+
+/* ------------------------------------------------------------
+   STATUS NORMALIZATION
+------------------------------------------------------------ */
+
+function getMachineStatus(machine) {
+
+    if (!machine) {
+
+        return "healthy";
+
+    }
+
+
+    /*
+     * FIRST PRIORITY:
+     * Use backend classification.
+     */
+
+    const backendStatus =
+        String(
+            machine.status || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    if (
+        backendStatus === "critical" ||
+        backendStatus === "warning" ||
+        backendStatus === "healthy"
+    ) {
+
+        return backendStatus;
+
+    }
+
+
+    /*
+     * FALLBACK:
+     * Only if backend did not provide a status.
+     */
+
+    const probability =
+        Number(
+            machine.failureProbabilityPct
+        );
+
+
+    const threshold =
+        Number(
+            machine.threshold
+        );
+
+
+    if (
+        Number.isFinite(probability) &&
+        Number.isFinite(threshold)
+    ) {
+
+        const thresholdPercent =
+            threshold <= 1
+                ? threshold * 100
+                : threshold;
+
+
+        if (
+            probability >= thresholdPercent
+        ) {
+
+            return "critical";
+
+        }
+
+
+        if (
+            probability >=
+            thresholdPercent * 0.65
+        ) {
+
+            return "warning";
+
+        }
+
+    }
+
+
+    return "healthy";
+
+}
+
+
+/* ------------------------------------------------------------
+   INR FORMAT
+------------------------------------------------------------ */
+
+function formatINR(value) {
+
+    const amount =
+        Number(value || 0);
+
+
+    return "₹" +
+        amount.toLocaleString(
+            "en-IN",
+            {
+                maximumFractionDigits: 0
+            }
+        );
+
+}
+
+
+/* ------------------------------------------------------------
+   UPDATE STATUS UI
+------------------------------------------------------------ */
+
+function updateStatusUI(machine) {
+
+    if (!machine) {
+
+        return;
+
+    }
+
+
+    const status =
+        getMachineStatus(machine);
+
+
+    /*
+     * --------------------------------------------------------
+     * RISK CARD
+     * --------------------------------------------------------
+     */
+
+    const riskCard =
+        document.getElementById(
+            "riskCard"
+        );
+
+
+    if (riskCard) {
+
+        riskCard.classList.remove(
+            "good",
+            "warn",
+            "bad"
+        );
+
+
+        if (status === "critical") {
+
+            riskCard.classList.add(
+                "bad"
+            );
+
+        }
+        else if (status === "warning") {
+
+            riskCard.classList.add(
+                "warn"
+            );
+
+        }
+        else {
+
+            riskCard.classList.add(
+                "good"
+            );
+
+        }
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * RISK %
+     * --------------------------------------------------------
+     */
+
+    const riskPct =
+        document.getElementById(
+            "riskPct"
+        );
+
+
+    if (riskPct) {
+
+        if (
+            machine.failureProbabilityPct !==
+            undefined &&
+            machine.failureProbabilityPct !==
+            null
+        ) {
+
+            riskPct.textContent =
+                machine.failureProbabilityPct +
+                "%";
+
+        }
+        else {
+
+            riskPct.textContent =
+                "—";
+
+        }
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * RISK STATUS
+     * --------------------------------------------------------
+     */
+
+    const riskStatus =
+        document.getElementById(
+            "riskStatus"
+        );
+
+
+    if (riskStatus) {
+
+        riskStatus.textContent =
+            status.toUpperCase();
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * HEALTH SCORE
+     * --------------------------------------------------------
+     */
+
+    const healthScore =
+        document.getElementById(
+            "healthScore"
+        );
+
+
+    if (healthScore) {
+
+        if (
+            machine.healthScore !==
+            undefined &&
+            machine.healthScore !==
+            null
+        ) {
+
+            healthScore.textContent =
+                machine.healthScore +
+                "%";
+
+        }
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * STATUS BADGE
+     * --------------------------------------------------------
+     */
+
+    const statusBadge =
+        document.getElementById(
+            "statusBadge"
+        );
+
+
+    if (statusBadge) {
+
+        statusBadge.textContent =
+            status.toUpperCase();
+
+
+        statusBadge.className =
+            "status " + status;
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * HEALTHY NOTICE
+     * --------------------------------------------------------
+     */
+
+    const healthyNotice =
+        document.getElementById(
+            "healthyNotice"
+        );
+
+
+    if (healthyNotice) {
+
+        healthyNotice.style.display =
+            status === "healthy"
+                ? ""
+                : "none";
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * COST SECTION
+     * --------------------------------------------------------
+     */
+
+    const costSection =
+        document.getElementById(
+            "costSection"
+        );
+
+
+    if (costSection) {
+
+        costSection.style.display =
+            status === "healthy"
+                ? "none"
+                : "";
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * PREDICTED FAILURE
+     * --------------------------------------------------------
+     */
+
+    const predictionText =
+        document.getElementById(
+            "predictionText"
+        );
+
+
+    if (predictionText) {
+
+        predictionText.textContent =
+            (
+                status === "critical" ||
+                machine.predictedFailure === true
+            )
+                ? "Yes"
+                : "No";
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * MAINTENANCE RECOMMENDATION
+     * --------------------------------------------------------
+     */
+
+    const maintenance =
+        machine.maintenance || {};
+
+
+    let action =
+        maintenance.action;
+
+
+    let reason =
+        maintenance.reason;
+
+
+    let priority =
+        maintenance.priority;
+
+
+    /*
+     * Fallback values.
+     *
+     * This makes sure a critical uploaded CSV machine
+     * cannot accidentally show:
+     *
+     * "Continue routine monitoring"
+     */
+
+    if (status === "critical") {
+
+        action =
+            action ||
+            "Stop and inspect the machine";
+
+
+        reason =
+            reason ||
+            "High predicted failure risk requires immediate inspection.";
+
+
+        priority =
+            priority ||
+            "URGENT";
+
+    }
+    else if (status === "warning") {
+
+        action =
+            action ||
+            "Schedule inspection and monitor closely";
+
+
+        reason =
+            reason ||
+            "Elevated predicted failure risk requires close monitoring.";
+
+
+        priority =
+            priority ||
+            "HIGH";
+
+    }
+    else {
+
+        action =
+            action ||
+            "Continue routine monitoring";
+
+
+        reason =
+            reason ||
+            "No elevated failure risk detected.";
+
+
+        priority =
+            priority ||
+            "NORMAL";
+
+    }
+
+
+    const advisorAction =
+        document.getElementById(
+            "advisorAction"
+        );
+
+
+    if (advisorAction) {
+
+        advisorAction.textContent =
+            action;
+
+    }
+
+
+    const advisorReason =
+        document.getElementById(
+            "advisorReason"
+        );
+
+
+    if (advisorReason) {
+
+        advisorReason.textContent =
+            reason;
+
+    }
+
+
+    const advisorBadge =
+        document.getElementById(
+            "advisorBadge"
+        );
+
+
+    if (advisorBadge) {
+
+        advisorBadge.textContent =
+            priority;
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * MAINTENANCE COST
+     * --------------------------------------------------------
+     */
+
+    const profile =
+        machine.maintenanceProfile || {};
+
+
+    const costValue =
+        document.getElementById(
+            "costValue"
+        );
+
+
+    if (costValue) {
+
+        costValue.textContent =
+            formatINR(
+                profile.estimatedCostINR
+            );
+
+    }
+
+
+    const exposureValue =
+        document.getElementById(
+            "exposureValue"
+        );
+
+
+    if (exposureValue) {
+
+        exposureValue.textContent =
+            formatINR(
+                profile.potentialFailureCostINR
+            );
+
+    }
+
+
+    const savingValue =
+        document.getElementById(
+            "savingValue"
+        );
+
+
+    if (savingValue) {
+
+        savingValue.textContent =
+            formatINR(
+                profile.estimatedSavingsINR
+            );
+
+    }
+
+
+    const summaryCost =
+        document.getElementById(
+            "summaryCost"
+        );
+
+
+    if (summaryCost) {
+
+        if (status === "healthy") {
+
+            summaryCost.textContent =
+                "Not required";
+
+        }
+        else {
+
+            summaryCost.textContent =
+                formatINR(
+                    profile.estimatedCostINR
+                );
+
+        }
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * RUL
+     * --------------------------------------------------------
+     */
+
+    const rulValue =
+        document.getElementById(
+            "rulValue"
+        );
+
+
+    if (rulValue) {
+
+        if (
+            machine.estimatedRUL !==
+            undefined &&
+            machine.estimatedRUL !==
+            null
+        ) {
+
+            rulValue.textContent =
+                Math.round(
+                    Number(
+                        machine.estimatedRUL
+                    )
+                );
+
+        }
+        else {
+
+            rulValue.textContent =
+                "—";
+
+        }
+
+    }
+
+
+    const rulUnit =
+        document.getElementById(
+            "rulUnit"
+        );
+
+
+    if (rulUnit) {
+
+        if (
+            machine.estimatedRUL !==
+            undefined &&
+            machine.estimatedRUL !==
+            null
+        ) {
+
+            rulUnit.textContent =
+                "cycles remaining · cycle " +
+                (
+                    machine.cycle ??
+                    "—"
+                );
+
+        }
+        else {
+
+            rulUnit.textContent =
+                "RUL unavailable";
+
+        }
+
+    }
+
+
+    /*
+     * --------------------------------------------------------
+     * CYCLE
+     * --------------------------------------------------------
+     */
+
+    const cycleValue =
+        document.getElementById(
+            "cycleValue"
+        );
+
+
+    if (cycleValue) {
+
+        cycleValue.textContent =
+            machine.cycle ??
+            "—";
+
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   API STATE
+------------------------------------------------------------ */
+
+function setApiState(
+    type,
+    text
+) {
+
+    const element =
+        document.getElementById(
+            "liveMachineState"
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.className =
+        "api-state " + type;
+
+
+    element.innerHTML =
+        "<i></i>" +
+        text;
+
+}
+
+
+/* ------------------------------------------------------------
+   FETCH CURRENT MACHINE
+------------------------------------------------------------ */
+
+async function refreshMachine() {
+
+    setApiState(
+        "loading",
+        "Updating"
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/machines/" +
+                encodeURIComponent(
+                    engineId
+                ),
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "API request failed: " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            data &&
+            data.machine
+        ) {
+
+            currentMachine =
+                data.machine;
+
+
+            updateStatusUI(
+                currentMachine
+            );
+
+        }
+
+
+        setApiState(
+            "online",
+            "Live"
+        );
+
+    }
+    catch (error) {
+
+        /*
+         * VERY IMPORTANT:
+         *
+         * Never convert an API error into HEALTHY.
+         *
+         * Keep the last known classification.
+         */
+
+        setApiState(
+            "offline",
+            "Showing latest result"
+        );
+
+
+        console.error(
+            "MechSense API error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ------------------------------------------------------------
+   CHART DATA
+------------------------------------------------------------ */
+
+const labels =
+    readings.map(
+        function (row, index) {
+
+            return row.cycle !==
+                undefined
+                ? row.cycle
+                : index + 1;
+
+        }
+    );
+
+
+const temperature =
+    readings.map(
+        function (row) {
+
+            return getSensorValue(
+                row,
+                [
+                    "sensor_4",
+                    "Process temperature [K]"
+                ]
+            );
+
+        }
+    );
+
+
+const rpm =
+    readings.map(
+        function (row) {
+
+            return getSensorValue(
+                row,
+                [
+                    "sensor_11",
+                    "Rotational speed [rpm]"
+                ]
+            );
+
+        }
+    );
+
+
+const torque =
+    readings.map(
+        function (row) {
+
+            return getSensorValue(
+                row,
+                [
+                    "sensor_15",
+                    "Torque [Nm]"
+                ]
+            );
+
+        }
+    );
+
+
+const wear =
+    readings.map(
+        function (row) {
+
+            return getSensorValue(
+                row,
+                [
+                    "tool_wear",
+                    "Tool wear [min]",
+                    "sensor_15"
+                ]
+            );
+
+        }
+    );
+
+
+/* ------------------------------------------------------------
+   CREATE LINE CHART
+------------------------------------------------------------ */
+
+function createLineChart(
+    canvasId,
+    label,
+    values
+) {
+
+    const canvas =
+        document.getElementById(
+            canvasId
+        );
+
+
+    if (
+        !canvas ||
+        typeof Chart === "undefined"
+    ) {
+
+        return;
+
+    }
+
+
+    new Chart(
+        canvas,
+        {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+
+                        label: label,
+
+                        data: values,
+
+                        borderWidth: 2,
+
+                        pointRadius:
+                            values.length > 40
+                                ? 0
+                                : 2,
+
+                        tension: 0.25,
+
+                        fill: true
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    }
+
+                },
+
+                scales: {
+
+                    x: {
+
+                        grid: {
+                            display: false
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ------------------------------------------------------------
+   CREATE SENSOR CHARTS
+------------------------------------------------------------ */
+
+createLineChart(
+    "sensorTrendChart",
+    "Temperature",
+    temperature
+);
+
+
+createLineChart(
+    "temperatureChart",
+    "Temperature",
+    temperature
+);
+
+
+createLineChart(
+    "rpmChart",
+    "RPM",
+    rpm
+);
+
+
+createLineChart(
+    "torqueChart",
+    "Torque",
+    torque
+);
+
+
+createLineChart(
+    "wearChart",
+    "Tool Wear",
+    wear
+);
+
+
+/* ------------------------------------------------------------
+   RISK DOUGHNUT
+------------------------------------------------------------ */
+
+const riskCanvas =
+    document.getElementById(
+        "riskChart"
+    );
+
+
+if (
+    riskCanvas &&
+    typeof Chart !== "undefined"
+) {
+
+    const initialRisk =
+        Number(
+            currentMachine.failureProbabilityPct ||
+            0
+        );
+
+
+    new Chart(
+        riskCanvas,
+        {
+
+            type: "doughnut",
+
+            data: {
+
+                labels: [
+                    "Current Risk",
+                    "Remaining"
+                ],
+
+                datasets: [
+
+                    {
+
+                        data: [
+
+                            initialRisk,
+
+                            Math.max(
+                                0,
+                                100 - initialRisk
+                            )
+
+                        ],
+
+                        borderWidth: 0
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                cutout: "72%",
+
+                plugins: {
+
+                    legend: {
+                        display: false
+                    }
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ------------------------------------------------------------
+   RUL BY CYCLE
+------------------------------------------------------------ */
+
+const rulCanvas =
+    document.getElementById(
+        "rulCycleChart"
+    );
+
+
+if (
+    rulCanvas &&
+    rulHistory &&
+    rulHistory.length > 0 &&
+    typeof Chart !== "undefined"
+) {
+
+    new Chart(
+        rulCanvas,
+        {
+
+            type: "line",
+
+            data: {
+
+                labels:
+                    rulHistory.map(
+                        function (point) {
+
+                            return point.cycle;
+
+                        }
+                    ),
+
+                datasets: [
+
+                    {
+
+                        label:
+                            "Estimated RUL (cycles)",
+
+                        data:
+                            rulHistory.map(
+                                function (point) {
+
+                                    return point.rul;
+
+                                }
+                            ),
+
+                        borderWidth: 2,
+
+                        pointRadius: 1.5,
+
+                        tension: 0.25,
+
+                        fill: false
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                plugins: {
+
+                    legend: {
+                        display: true
+                    }
+
+                },
+
+                scales: {
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text:
+                                "Machine Cycle"
+
+                        }
+
+                    },
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        title: {
+
+                            display: true,
+
+                            text:
+                                "Estimated RUL (cycles)"
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ------------------------------------------------------------
+   INITIAL STATUS
+------------------------------------------------------------ */
+
+updateStatusUI(
+    currentMachine
+);
+
+
+/* ------------------------------------------------------------
+   LIVE REFRESH
+------------------------------------------------------------ */
+
+refreshMachine();
+
+
+setInterval(
+    refreshMachine,
+    30000
+);
+
+</script>
+
+{% endif %}
+
+{% endblock %}

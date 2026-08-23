@@ -1,0 +1,26 @@
+MechSense Industrial LSTM — Report Evaluation
+
+Dataset: mechsense_compatible_2000.csv
+Total readings: 2000
+Total machines: 20
+Split: 12 train / 4 validation / 4 held-out test machines
+Sequence length: 30
+
+FINAL HELD-OUT TEST RESULTS
+Accuracy: 87.6761%
+Precision: 90.2439%
+Recall: 54.4118%
+F1: 67.8899%
+PR-AUC: 78.1363%
+ROC-AUC: 87.7451%
+
+Held-out test confusion matrix:
+                 Predicted Normal   Predicted Risk
+Actual Normal            212               4
+Actual Risk               31              37
+
+Test sequences: 284
+Test failures: 68
+
+Validation results are kept separately in industrial_lstm_metadata.json.
+The Reports page intentionally displays the final held-out TEST metrics.

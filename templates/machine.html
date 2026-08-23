@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Machine {{engine_id}} · MechSense{% endblock %}
+{% block heading %}Machine {{engine_id}}{% endblock %}
+{% block content %}
+{% if error %}
+<section class="panel"><div class="notice error">{{ error }}</div><a class="btn" href="/machines">Back to Machines</a></section>
+{% else %}
+<section class="panel">
+  <div class="panel-head"><div><h2>Engine {{engine_id}}</h2><p>Latest {{readings|length}} readings used by the LSTM.</p></div></div>
+  <div class="big-risk">{{'%.2f'|format(probability*100)}}%</div>
+  <span class="status {{'critical' if probability>=threshold else 'healthy'}}">{{'FAILURE RISK' if probability>=threshold else 'LOW RISK'}}</span>
+  <p>Decision threshold: {{'%.0f'|format(threshold*100)}}%</p>
+</section>
+<section class="panel"><div class="panel-head"><h2>Latest Sensor Sequence</h2></div>
+<div class="table-scroll"><table class="data-table"><thead><tr>{% for k in readings[0].keys() %}<th>{{k}}</th>{% endfor %}</tr></thead><tbody>{% for r in readings %}<tr>{% for v in r.values() %}<td>{{v}}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div></section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+
+{% block title %}Time Series Forecast · MechSense{% endblock %}
+
+{% block heading %}Time Series Forecast{% endblock %}
+
+{% block content %}
+
+<div class="notice">
+    <b>Forecast method:</b>
+    linear trend baseline on T50 / Sensor 4.
+    This is separate from the trained LSTM failure classifier.
+</div>
+
+<section class="grid-2">
+
+    <!-- FORECAST GRAPH -->
+    <div class="panel chart-panel tall">
+
+        <div class="panel-head">
+
+            <div>
+                <h2>Forecast · Engine {{ result.engineId }}</h2>
+
+                <p>
+                    {{ result.label }}
+                    · next {{ result.forecast|length }} cycles
+                </p>
+            </div>
+
+            <span class="tag">
+                {{ result.method }}
+            </span>
+
+        </div>
+
+        <div style="height:430px; position:relative;">
+            <canvas id="forecastChart"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- FORECAST SUMMARY -->
+    <div class="panel">
+
+        <div class="panel-head">
+
+            <div>
+                <h2>Forecast Summary</h2>
+                <p>Backend API output</p>
+            </div>
+
+        </div>
+
+
+        <div class="decision-list">
+
+            <div>
+                <span>Machine</span>
+                <b>MS-{{ result.engineId }}</b>
+            </div>
+
+            <div>
+                <span>Slope / cycle</span>
+                <b>{{ result.slopePerCycle }}</b>
+            </div>
+
+            <div>
+                <span>Historical points</span>
+                <b>{{ result.historical|length }}</b>
+            </div>
+
+            <div>
+                <span>Forecast points</span>
+                <b>{{ result.forecast|length }}</b>
+            </div>
+
+        </div>
+
+
+        <a
+            class="btn secondary wide"
+            href="/api/forecast/{{ result.engineId }}?horizon=12"
+        >
+            GET FORECAST API
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+const historical = {{ result.historical|tojson }};
+const forecast = {{ result.forecast|tojson }};
+
+const historicalCycles =
+    historical.map(x => x.cycle);
+
+const historicalValues =
+    historical.map(x => x.value);
+
+const forecastCycles =
+    forecast.map(x => x.cycle);
+
+const forecastValues =
+    forecast.map(x => x.value);
+
+const allCycles = [
+    ...historicalCycles,
+    ...forecastCycles
+];
+
+const historicalData = [
+    ...historicalValues,
+    ...Array(forecast.length).fill(null)
+];
+
+/*
+   Connect the forecast to the last historical point.
+*/
+const forecastData = [
+    ...Array(historical.length - 1).fill(null),
+
+    historical[historical.length - 1].value,
+
+    ...forecastValues
+];
+
+
+new Chart(
+    document.getElementById('forecastChart'),
+    {
+        type: 'line',
+
+        data: {
+
+            labels: allCycles,
+
+            datasets: [
+
+                {
+                    label: 'Historical',
+
+                    data: historicalData,
+
+                    borderWidth: 2,
+
+                    tension: 0.28,
+
+                    pointRadius: 2,
+
+                    pointHoverRadius: 4,
+
+                    fill: false,
+
+                    borderColor: '#25c7f4',
+
+                    backgroundColor: '#25c7f4'
+                },
+
+                {
+                    label: 'Forecast',
+
+                    data: forecastData,
+
+                    borderWidth: 2,
+
+                    borderDash: [6, 5],
+
+                    tension: 0.28,
+
+                    pointRadius: 2,
+
+                    pointHoverRadius: 4,
+
+                    fill: false,
+
+                    borderColor: '#ff4f8b',
+
+                    backgroundColor: '#ff4f8b'
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+
+            plugins: {
+
+                legend: {
+                    display: true,
+
+                    position: 'top',
+
+                    labels: {
+                        color: '#9fb2c9',
+                        usePointStyle: true,
+                        padding: 18
+                    }
+                },
+
+                tooltip: {
+
+                    backgroundColor: '#0b1726',
+
+                    borderColor: '#263b55',
+
+                    borderWidth: 1,
+
+                    titleColor: '#ffffff',
+
+                    bodyColor: '#cbd6e4',
+
+                    padding: 12
+
+                }
+
+            },
+
+            scales: {
+
+                x: {
+
+                    title: {
+                        display: true,
+                        text: 'Cycle',
+                        color: '#8193aa'
+                    },
+
+                    ticks: {
+                        color: '#8193aa',
+                        maxTicksLimit: 12
+                    },
+
+                    grid: {
+                        color: 'rgba(100,120,145,.12)'
+                    }
+
+                },
+
+                y: {
+
+                    title: {
+                        display: true,
+                        text: 'T50 / Sensor 4',
+                        color: '#8193aa'
+                    },
+
+                    ticks: {
+                        color: '#8193aa'
+                    },
+
+                    grid: {
+                        color: 'rgba(100,120,145,.12)'
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
+</script>
+
+{% endblock %}

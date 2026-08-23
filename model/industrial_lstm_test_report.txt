@@ -1,0 +1,57 @@
+MechSense Industrial LSTM - 2,000-row dataset test report
+
+Dataset rows: 2000
+Machines: 20
+Train machines: M001, M002, M003, M005, M006, M007, M011, M012, M014, M016, M017, M020
+Validation machines: M004, M009, M013, M018
+Test machines: M008, M010, M015, M019
+Sequence length: 30
+Chosen threshold: 0.24
+
+VALIDATION
+{
+  "accuracy": 0.9190140845070423,
+  "precision": 0.9130434782608695,
+  "recall": 0.6885245901639344,
+  "f1": 0.7850467289719626,
+  "pr_auc": 0.8405618667114189,
+  "roc_auc": 0.9038447401308535,
+  "confusion_matrix": [
+    [
+      219,
+      4
+    ],
+    [
+      19,
+      42
+    ]
+  ],
+  "rows": 284,
+  "failures": 61,
+  "predicted_failures": 46,
+  "classification_report": "              precision    recall  f1-score   support\n\n         0.0       0.92      0.98      0.95       223\n         1.0       0.91      0.69      0.79        61\n\n    accuracy                           0.92       284\n   macro avg       0.92      0.84      0.87       284\nweighted avg       0.92      0.92      0.91       284\n"
+}
+
+HELD-OUT TEST
+{
+  "accuracy": 0.8767605633802817,
+  "precision": 0.9024390243902439,
+  "recall": 0.5441176470588235,
+  "f1": 0.6788990825688074,
+  "pr_auc": 0.781362717883468,
+  "roc_auc": 0.8774509803921569,
+  "confusion_matrix": [
+    [
+      212,
+      4
+    ],
+    [
+      31,
+      37
+    ]
+  ],
+  "rows": 284,
+  "failures": 68,
+  "predicted_failures": 41,
+  "classification_report": "              precision    recall  f1-score   support\n\n         0.0       0.87      0.98      0.92       216\n         1.0       0.90      0.54      0.68        68\n\n    accuracy                           0.88       284\n   macro avg       0.89      0.76      0.80       284\nweighted avg       0.88      0.88      0.87       284\n"
+}

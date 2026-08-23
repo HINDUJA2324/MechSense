@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Reports · MechSense{% endblock %}
+{% block heading %}Reports{% endblock %}
+
+{% block content %}
+{% set report = data.reportModel if data.reportModel is defined else data.model %}
+{% set metrics = report.metrics if report.metrics is defined else {} %}
+{% set cm = metrics.confusion_matrix if metrics.confusion_matrix is defined else [[0, 0], [0, 0]] %}
+
+<section class="metric-grid">
+  <div class="metric-card">
+    <span>Accuracy</span>
+    <strong>{{ '%.1f'|format((metrics.accuracy|default(0)) * 100) }}%</strong>
+    <em>Held-out test machines</em>
+  </div>
+  <div class="metric-card">
+    <span>Precision</span>
+    <strong>{{ '%.1f'|format((metrics.precision|default(0)) * 100) }}%</strong>
+    <em>Positive predictions</em>
+  </div>
+  <div class="metric-card">
+    <span>Recall</span>
+    <strong>{{ '%.1f'|format((metrics.recall|default(0)) * 100) }}%</strong>
+    <em>Failure detection</em>
+  </div>
+  <div class="metric-card">
+    <span>PR-AUC</span>
+    <strong>{{ '%.1f'|format((metrics.pr_auc|default(0)) * 100) }}%</strong>
+    <em>Ranking quality</em>
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Confusion Matrix</h2>
+        <p>Held-out test machines · {{ metrics.rows|default(0) }} test sequences</p>
+      </div>
+    </div>
+    <div class="confusion">
+      <div></div>
+      <b>Pred. Normal</b>
+      <b>Pred. Risk</b>
+      <b>Actual Normal</b>
+      <strong>{{ cm[0][0] }}</strong>
+      <strong>{{ cm[0][1] }}</strong>
+      <b>Actual Risk</b>
+      <strong>{{ cm[1][0] }}</strong>
+      <strong>{{ cm[1][1] }}</strong>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Dataset</h2>
+        <p>2,000-row Industrial LSTM artifact</p>
+      </div>
+    </div>
+    <div class="decision-list">
+      <div><span>Train machines</span><b>{{ report.train_engines|default(0) }}</b></div>
+      <div><span>Validation machines</span><b>{{ report.validation_engines|default(0) }}</b></div>
+      <div><span>Test machines</span><b>{{ report.test_engines|default(0) }}</b></div>
+      <div><span>Total machines</span><b>{{ report.total_machines|default(0) }}</b></div>
+      <div><span>Total readings</span><b>{{ report.total_readings|default(0) }}</b></div>
+      <div><span>Test sequences</span><b>{{ report.test_rows|default(metrics.rows|default(0)) }}</b></div>
+      <div><span>Sequence</span><b>{{ report.sequence_length|default(30) }} readings</b></div>
+      <div><span>Threshold</span><b>{{ '%.2f'|format(report.threshold|default(0)) }}</b></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

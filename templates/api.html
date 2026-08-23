@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}API Center · MechSense{% endblock %}
+{% block heading %}API Center{% endblock %}
+{% block content %}
+<section class="hero-grid">
+  <div class="panel risk-hero">
+    <div>
+      <span class="eyebrow">DEVELOPER PLATFORM</span>
+      <h2>MechSense REST API</h2>
+      <div class="big-risk" style="font-size:28px">v1.0.0</div>
+      <span class="status healthy">READY</span>
+    </div>
+    <div class="risk-meter">
+      <div class="meter-ring" style="--p:100%"><span>API</span></div>
+      <small>OpenAPI enabled</small>
+    </div>
+  </div>
+  <div class="metric-card good"><span>Swagger Docs</span><strong>✓</strong><em>Interactive API testing</em></div>
+  <div class="metric-card"><span>JSON API</span><strong>12+</strong><em>Versioned endpoints</em></div>
+  <div class="metric-card"><span>Inference</span><strong>LSTM</strong><em>PyTorch model</em></div>
+</section>
+
+<section class="grid-2">
+  <div class="panel">
+    <div class="panel-head"><div><h2>API Server</h2><p>Run the FastAPI service beside the Flask dashboard.</p></div><span id="apiState" class="status warning">CHECKING</span></div>
+    <div class="decision-list">
+      <div><span>Base URL</span><b>http://127.0.0.1:8000</b></div>
+      <div><span>Swagger</span><b>/docs</b></div>
+      <div><span>ReDoc</span><b>/redoc</b></div>
+      <div><span>Version</span><b>v1</b></div>
+    </div>
+    <div class="toolbar" style="margin-top:15px">
+      <a class="btn primary" href="http://127.0.0.1:8000/docs" target="_blank">OPEN SWAGGER →</a>
+      <a class="btn secondary" href="http://127.0.0.1:8000/redoc" target="_blank">OPEN REDOC</a>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2>What you can connect</h2><p>Use the same backend from external clients.</p></div></div>
+    <div class="decision-list">
+      <div><span>Web / React</span><b>Fetch / Axios</b></div>
+      <div><span>Mobile</span><b>REST / JSON</b></div>
+      <div><span>IoT Gateway</span><b>Machine prediction</b></div>
+      <div><span>Postman</span><b>Swagger import</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Core Endpoints</h2><p>Versioned API contract for integrations.</p></div></div>
+  <div class="endpoint-list">
+    <code>GET /api/v1/health</code>
+    <code>GET /api/v1/dashboard</code>
+    <code>GET /api/v1/machines</code>
+    <code>GET /api/v1/machines/{engine_id}</code>
+    <code>GET /api/v1/predict/{engine_id}</code>
+    <code>POST /api/v1/predict</code>
+    <code>POST /api/v1/predict/csv</code>
+    <code>GET /api/v1/trends/{engine_id}</code>
+    <code>GET /api/v1/forecast/{engine_id}</code>
+    <code>GET /api/v1/alerts</code>
+    <code>GET /api/v1/maintenance</code>
+    <code>GET /api/v1/model</code>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Quick Integration</h2><p>Example request from another application.</p></div></div>
+  <pre style="margin:0;padding:14px;background:#080f1a;border:1px solid #1b273a;border-radius:8px;overflow:auto;color:#a9b6ff;font-size:10px"><code>GET http://127.0.0.1:8000/api/v1/predict/35
+
+{
+  "engineId": 35,
+  "failureProbabilityPct": 98.87,
+  "status": "critical"
+}</code></pre>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+async function checkApi(){
+  const el=document.getElementById('apiState');
+  try{
+    const r=await fetch('http://127.0.0.1:8000/api/v1/health');
+    el.textContent=r.ok?'ONLINE':'ERROR';
+    el.className='status '+(r.ok?'healthy':'critical');
+  }catch(e){
+    el.textContent='OFFLINE';
+    el.className='status critical';
+  }
+}
+checkApi();
+setInterval(checkApi,15000);
+</script>
+{% endblock %}

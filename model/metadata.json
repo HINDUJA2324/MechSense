@@ -1,0 +1,46 @@
+{
+  "model": "PyTorch LSTM",
+  "sequence_length": 30,
+  "rul_cutoff_cycles": 30,
+  "threshold": 0.8900000000000006,
+  "features": [
+    "op_setting_1",
+    "op_setting_2",
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_6",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_17",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "train_engines": 80,
+  "validation_engines": 20,
+  "metrics": {
+    "accuracy": 0.93,
+    "precision": 0.95,
+    "recall": 0.76,
+    "f1": 0.8444444444444444,
+    "pr_auc": 0.9810523710805581,
+    "confusion_matrix": [
+      [
+        74,
+        1
+      ],
+      [
+        6,
+        19
+      ]
+    ],
+    "test_engines": 100,
+    "positive_test_engines": 25
+  }
+}

@@ -1,0 +1,968 @@
+{% extends 'base.html' %}
+
+{% block title %}Time Series Forecast · MechSense{% endblock %}
+{% block heading %}Time Series Forecast{% endblock %}
+
+{% block content %}
+
+<style>
+/* =========================================================
+   TIME SERIES FORECAST
+   Dataset banner is provided by base.html
+   ========================================================= */
+
+.ms-forecast {
+    display: grid;
+    gap: 12px;
+}
+
+
+/* =========================================================
+   FORECAST METHOD NOTE
+   ========================================================= */
+
+.ms-forecast-note {
+    padding: 11px 15px;
+
+    border: 1px solid #203b5c;
+    border-radius: 12px;
+
+    background: #0b1a2b;
+
+    color: #9db7d6;
+
+    font-size: 10px;
+}
+
+.ms-forecast-note b {
+    color: #eaf3ff;
+}
+
+
+/* =========================================================
+   FORECAST GRID
+   ========================================================= */
+
+.ms-forecast-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.65fr)
+        minmax(300px, .75fr);
+
+    gap: 12px;
+
+    align-items: stretch;
+}
+
+
+/* =========================================================
+   PANELS
+   ========================================================= */
+
+.ms-forecast-panel {
+    min-width: 0;
+
+    border: 1px solid #1c2a3e;
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #0d1725,
+            #09111d
+        );
+
+    overflow: hidden;
+}
+
+.ms-forecast-panel-inner {
+    padding: 18px;
+}
+
+
+/* =========================================================
+   CHART
+   ========================================================= */
+
+.ms-forecast-chart {
+    height: 430px;
+
+    margin-top: 10px;
+}
+
+.ms-forecast-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+/* =========================================================
+   SUMMARY
+   ========================================================= */
+
+.ms-summary {
+    padding: 18px;
+}
+
+.ms-summary-row {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 18px;
+
+    padding: 14px 0;
+
+    border-bottom: 1px solid #182438;
+}
+
+.ms-summary-row:last-of-type {
+    border-bottom: 0;
+}
+
+.ms-summary-row span {
+    color: #71819a;
+
+    font-size: 10px;
+}
+
+.ms-summary-row strong {
+    color: #eaf2ff;
+
+    font-size: 10px;
+
+    text-align: right;
+
+    max-width: 62%;
+}
+
+
+/* =========================================================
+   NEXT PREDICTION
+   ========================================================= */
+
+.ms-next {
+    margin-top: 18px;
+
+    padding: 17px;
+
+    border: 1px solid #203b58;
+    border-radius: 11px;
+
+    background: #0a1726;
+}
+
+.ms-next-label {
+    color: #71839d;
+
+    font-size: 9px;
+
+    letter-spacing: .08em;
+
+    text-transform: uppercase;
+}
+
+.ms-next-value {
+    margin-top: 7px;
+
+    color: #f2f7ff;
+
+    font-size: 27px;
+
+    font-weight: 800;
+
+    line-height: 1.05;
+}
+
+.ms-next-cycle {
+    margin-top: 5px;
+
+    color: #7e91ad;
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   LEGEND
+   ========================================================= */
+
+.ms-legend {
+    display: flex;
+
+    justify-content: center;
+
+    gap: 24px;
+
+    margin-top: 2px;
+
+    color: #8291a8;
+
+    font-size: 10px;
+}
+
+.ms-legend-item {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+}
+
+.ms-legend-line {
+    width: 25px;
+    height: 3px;
+
+    border-radius: 2px;
+
+    background: #19d6ff;
+}
+
+.ms-legend-dash {
+    width: 25px;
+    height: 0;
+
+    border-top: 3px dashed #ff4f96;
+}
+
+
+/* =========================================================
+   MACHINE SELECTOR
+   ========================================================= */
+
+.ms-machine-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid #1c2a3e;
+    border-radius: 12px;
+    background: #0b1421;
+}
+
+.ms-machine-selector-copy {
+    display: grid;
+    gap: 4px;
+}
+
+.ms-machine-selector-title {
+    color: #eaf3ff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ms-machine-selector-subtitle {
+    color: #71819a;
+    font-size: 10px;
+}
+
+.ms-machine-select-wrap {
+    position: relative;
+    min-width: 210px;
+}
+
+.ms-machine-select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 10px 38px 10px 12px;
+    border: 1px solid #29415f;
+    border-radius: 9px;
+    background: #0a1726;
+    color: #eaf3ff;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    outline: none;
+}
+
+.ms-machine-select:hover,
+.ms-machine-select:focus {
+    border-color: #19d6ff;
+}
+
+.ms-machine-select-wrap::after {
+    content: "⌄";
+    position: absolute;
+    right: 13px;
+    top: 7px;
+    color: #7e91ad;
+    font-size: 17px;
+    pointer-events: none;
+}
+
+.ms-machine-loading {
+    color: #71819a;
+    font-size: 10px;
+}
+
+@media (max-width: 600px) {
+    .ms-machine-selector {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .ms-machine-select-wrap {
+        min-width: 0;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .ms-forecast-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ms-forecast-chart {
+        height: 330px;
+    }
+}
+</style>
+
+
+<div class="ms-forecast">
+
+
+    <!-- =====================================================
+         FORECAST METHOD
+         Dataset banner is intentionally NOT here.
+         base.html already provides the single dataset banner.
+         ===================================================== -->
+
+    <div class="ms-forecast-note">
+
+        <b>Forecast method:</b>
+
+        bounded linear trend baseline using
+        {{ result.label if result else 'T50 / Sensor 4' }}.
+
+        This forecasting model is separate from the trained
+        LSTM failure classifier.
+
+    </div>
+
+
+    <!-- =====================================================
+         MACHINE SELECTOR
+         Loads every available machine from /api/machines.
+         Selecting a machine reloads the same forecast page
+         with that machine's forecast.
+         ===================================================== -->
+
+    <div class="ms-machine-selector">
+
+        <div class="ms-machine-selector-copy">
+            <div class="ms-machine-selector-title">
+                Select Machine for Forecast
+            </div>
+
+            <div class="ms-machine-selector-subtitle">
+                Choose any available engine to view its historical trend
+                and next 12-cycle forecast.
+            </div>
+        </div>
+
+        <div class="ms-machine-select-wrap">
+
+            <select
+                id="machineSelector"
+                class="ms-machine-select"
+                aria-label="Select machine for forecast"
+            >
+                <option value="">Loading machines...</option>
+            </select>
+
+        </div>
+
+    </div>
+
+
+    {% if result %}
+
+    <section class="ms-forecast-grid">
+
+
+        <!-- =================================================
+             LEFT: FORECAST CHART
+             ================================================= -->
+
+        <div class="ms-forecast-panel">
+
+            <div class="ms-forecast-panel-inner">
+
+                <div class="panel-head">
+
+                    <div>
+
+                        <h2 id="forecastTitle">
+                            Forecast · Engine {{ result.engineId }}
+                        </h2>
+
+                        <p>
+                            {{ result.label }}
+                            · next
+                            {{ result.forecast|length }}
+                            cycles
+                        </p>
+
+                    </div>
+
+                    <span class="tag">
+                        LINEAR TREND BASELINE
+                    </span>
+
+                </div>
+
+
+                <div class="ms-forecast-chart">
+
+                    <canvas id="forecastChart"></canvas>
+
+                </div>
+
+
+                <div class="ms-legend">
+
+                    <div class="ms-legend-item">
+
+                        <span class="ms-legend-line"></span>
+
+                        <span>
+                            Historical
+                        </span>
+
+                    </div>
+
+
+                    <div class="ms-legend-item">
+
+                        <span class="ms-legend-dash"></span>
+
+                        <span>
+                            Forecast
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             RIGHT: SUMMARY
+             ================================================= -->
+
+        <aside class="ms-forecast-panel">
+
+            <div class="ms-summary">
+
+                <div class="panel-head">
+
+                    <div>
+
+                        <h2>
+                            Forecast Summary
+                        </h2>
+
+                        <p>
+                            Selected machine forecast
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- MACHINE -->
+
+                <div class="ms-summary-row">
+
+                    <span>
+                        Machine
+                    </span>
+
+                    <strong>
+                        MS-{{ result.engineId }}
+                    </strong>
+
+                </div>
+
+
+                <!-- SENSOR -->
+
+                <div class="ms-summary-row">
+
+                    <span>
+                        Sensor
+                    </span>
+
+                    <strong>
+                        {{ result.label }}
+                    </strong>
+
+                </div>
+
+
+                <!-- SLOPE -->
+
+                <div class="ms-summary-row">
+
+                    <span>
+                        Slope / cycle
+                    </span>
+
+                    <strong>
+                        {{ "%.6f"|format(result.slopePerCycle) }}
+                    </strong>
+
+                </div>
+
+
+                <!-- HISTORICAL -->
+
+                <div class="ms-summary-row">
+
+                    <span>
+                        Historical points
+                    </span>
+
+                    <strong>
+                        {{ result.historical|length }}
+                    </strong>
+
+                </div>
+
+
+                <!-- FORECAST -->
+
+                <div class="ms-summary-row">
+
+                    <span>
+                        Forecast points
+                    </span>
+
+                    <strong>
+                        {{ result.forecast|length }}
+                    </strong>
+
+                </div>
+
+
+                <!-- NEXT PREDICTION -->
+
+                {% set next_point =
+                    result.forecast[0]
+                    if result.forecast
+                    else none
+                %}
+
+                <div class="ms-next">
+
+                    <div class="ms-next-label">
+                        Next predicted value
+                    </div>
+
+
+                    <div class="ms-next-value">
+
+                        {% if next_point %}
+
+                            {{ "%.2f"|format(
+                                next_point.value
+                            ) }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="ms-next-cycle">
+
+                        {% if next_point %}
+
+                            Cycle {{ next_point.cycle }}
+
+                        {% else %}
+
+                            No forecast available
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+    </section>
+
+
+    {% else %}
+
+
+    <!-- =====================================================
+         NO FORECAST
+         ===================================================== -->
+
+    <section class="ms-forecast-panel">
+
+        <div class="ms-forecast-panel-inner">
+
+            <div class="panel-head">
+
+                <div>
+
+                    <h2>
+                        Forecast unavailable
+                    </h2>
+
+                    <p>
+                        No forecast result is available
+                        for the selected machine.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+/* Machine selector is server-backed.  It does not wait for /api/machines,
+   so uploaded datasets cannot get stuck on "Loading machines...". */
+document.addEventListener("DOMContentLoaded", function () {
+    const selector = document.getElementById("machineSelector");
+    if (!selector) return;
+
+    const currentEngine = {{ (result.engineId if result else (engine_ids[0] if engine_ids else ""))|tojson }};
+    const machineIds = {{ engine_ids|tojson }};
+
+    selector.innerHTML = "";
+    if (!machineIds.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No machines available";
+        selector.appendChild(option);
+        return;
+    }
+
+    machineIds.forEach(function (engineId) {
+        const option = document.createElement("option");
+        option.value = engineId;
+        option.textContent = "MS-" + engineId;
+        if (String(engineId) === String(currentEngine)) option.selected = true;
+        selector.appendChild(option);
+    });
+
+    selector.addEventListener("change", function () {
+        if (this.value) {
+            window.location.href = "/forecast?engine=" + encodeURIComponent(this.value);
+        }
+    });
+});
+</script>
+
+
+{% if result %}
+
+<script>
+
+const historical =
+    {{ result.historical|tojson }};
+
+const forecast =
+    {{ result.forecast|tojson }};
+
+
+const historicalLabels =
+    historical.map(
+        p => p.cycle
+    );
+
+const historicalValues =
+    historical.map(
+        p => Number(p.value)
+    );
+
+
+const forecastLabels =
+    forecast.map(
+        p => p.cycle
+    );
+
+const forecastValues =
+    forecast.map(
+        p => Number(p.value)
+    );
+
+
+const allLabels = [
+    ...historicalLabels,
+    ...forecastLabels
+];
+
+
+new Chart(
+    document.getElementById("forecastChart"),
+    {
+        type: "line",
+
+        data: {
+
+            labels: allLabels,
+
+            datasets: [
+
+                /* ==============================
+                   HISTORICAL DATA
+                   ============================== */
+
+                {
+                    label: "Historical",
+
+                    data: [
+                        ...historicalValues,
+
+                        ...Array(
+                            forecastValues.length
+                        ).fill(null)
+                    ],
+
+                    borderColor: "#19d6ff",
+
+                    backgroundColor: "transparent",
+
+                    borderWidth: 3,
+
+                    pointRadius: 3,
+
+                    pointHoverRadius: 6,
+
+                    pointBackgroundColor:
+                        "#19d6ff",
+
+                    tension: 0.25,
+
+                    spanGaps: false
+                },
+
+
+                /* ==============================
+                   FORECAST DATA
+                   ============================== */
+
+                {
+                    label: "Forecast",
+
+                    data: [
+
+                        ...Array(
+                            Math.max(
+                                0,
+                                historicalValues.length - 1
+                            )
+                        ).fill(null),
+
+                        historicalValues.length
+                            ? historicalValues[
+                                historicalValues.length - 1
+                            ]
+                            : null,
+
+                        ...forecastValues
+                    ],
+
+                    borderColor: "#ff4f96",
+
+                    backgroundColor: "transparent",
+
+                    borderWidth: 3,
+
+                    borderDash: [7, 6],
+
+                    pointRadius: 3,
+
+                    pointHoverRadius: 6,
+
+                    pointBackgroundColor:
+                        "#ff4f96",
+
+                    tension: 0.15,
+
+                    spanGaps: false
+                }
+
+            ]
+        },
+
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+
+            interaction: {
+
+                mode: "index",
+
+                intersect: false
+
+            },
+
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+
+                },
+
+
+                tooltip: {
+
+                    padding: 10,
+
+                    bodyFont: {
+
+                        size: 12
+
+                    }
+
+                }
+
+            },
+
+
+            scales: {
+
+                x: {
+
+                    title: {
+
+                        display: true,
+
+                        text: "Cycle",
+
+                        color: "#71819a",
+
+                        font: {
+
+                            size: 10
+
+                        }
+
+                    },
+
+
+                    grid: {
+
+                        color:
+                            "rgba(255,255,255,.06)"
+
+                    },
+
+
+                    ticks: {
+
+                        color: "#74839b",
+
+                        maxTicksLimit: 12,
+
+                        font: {
+
+                            size: 9
+
+                        }
+
+                    }
+
+                },
+
+
+                y: {
+
+                    title: {
+
+                        display: true,
+
+                        text:
+                            "{{ result.label }}",
+
+                        color: "#71819a",
+
+                        font: {
+
+                            size: 10
+
+                        }
+
+                    },
+
+
+                    grid: {
+
+                        color:
+                            "rgba(255,255,255,.07)"
+
+                    },
+
+
+                    ticks: {
+
+                        color: "#9aa8bc",
+
+                        maxTicksLimit: 8,
+
+                        font: {
+
+                            size: 9
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
+</script>
+
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,772 @@
+{% extends 'base.html' %}
+
+{% block title %}Machines · MechSense{% endblock %}
+{% block heading %}Machine Monitoring{% endblock %}
+
+{% block content %}
+
+<style>
+/* =========================================================
+   MECHSENSE · MACHINE MONITORING
+   Alerts-style dashboard
+   Dataset banner is provided by base.html
+   ========================================================= */
+
+.mm-page {
+    display: grid;
+    gap: 16px;
+}
+
+
+/* =========================================================
+   SUMMARY CARDS
+   ========================================================= */
+
+.mm-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.mm-card {
+    padding: 16px;
+
+    border: 1px solid #1c2a3e;
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #0d1725,
+            #09111d
+        );
+
+    min-height: 88px;
+}
+
+.mm-card.healthy {
+    border-left: 3px solid #39d98a;
+}
+
+.mm-card.warning {
+    border-left: 3px solid #ffbf47;
+}
+
+.mm-card.critical {
+    border-left: 3px solid #ff5964;
+}
+
+.mm-card-label {
+    display: block;
+
+    color: #71819a;
+
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+
+    font-weight: 800;
+}
+
+.mm-card-value {
+    display: block;
+
+    margin-top: 7px;
+
+    color: #eef4ff;
+
+    font-size: 25px;
+    font-weight: 900;
+}
+
+.mm-card-sub {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #62718a;
+
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   MACHINE MONITORING PANEL
+   ========================================================= */
+
+.mm-panel {
+    border: 1px solid #1c2a3e;
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #0d1725,
+            #09111d
+        );
+
+    overflow: hidden;
+}
+
+.mm-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 17px 18px;
+
+    border-bottom: 1px solid #1c2a3e;
+}
+
+.mm-panel-title {
+    color: #eef4ff;
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.mm-panel-subtitle {
+    margin-top: 4px;
+
+    color: #667993;
+
+    font-size: 9px;
+}
+
+.mm-count {
+    padding: 7px 10px;
+
+    border: 1px solid #203049;
+    border-radius: 7px;
+
+    background: #101d2e;
+
+    color: #8193ad;
+
+    font-size: 8px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.mm-table-wrap {
+    overflow-x: auto;
+}
+
+.mm-table {
+    width: 100%;
+    min-width: 850px;
+
+    border-collapse: collapse;
+}
+
+.mm-table th {
+    padding: 14px 17px;
+
+    background: rgba(10,20,34,.75);
+
+    color: #70839e;
+
+    border-bottom: 1px solid #1c2a3e;
+
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+
+    font-weight: 800;
+
+    text-align: left;
+}
+
+.mm-table td {
+    padding: 15px 17px;
+
+    color: #dfe7f5;
+
+    border-bottom: 1px solid #182438;
+
+    font-size: 10px;
+}
+
+.mm-table tbody tr {
+    transition:
+        background .18s ease,
+        transform .18s ease;
+}
+
+.mm-table tbody tr:hover {
+    background: rgba(25,214,255,.035);
+}
+
+.mm-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* =========================================================
+   MACHINE
+   ========================================================= */
+
+.mm-machine-link {
+    text-decoration: none;
+}
+
+.mm-machine {
+    color: #eef4ff;
+
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.mm-machine-link:hover .mm-machine {
+    color: #19d6ff;
+}
+
+.mm-machine-sub {
+    margin-top: 4px;
+
+    color: #65768f;
+
+    font-size: 8px;
+}
+
+
+/* =========================================================
+   STATUS BADGES
+   ========================================================= */
+
+.mm-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 6px 9px;
+
+    border-radius: 7px;
+
+    font-size: 8px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+.mm-status-dot {
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+}
+
+.mm-status.healthy {
+    color: #39d98a;
+
+    background:
+        rgba(57,217,138,.10);
+
+    border:
+        1px solid rgba(57,217,138,.15);
+}
+
+.mm-status.healthy .mm-status-dot {
+    background: #39d98a;
+}
+
+.mm-status.warning {
+    color: #ffbf47;
+
+    background:
+        rgba(255,191,71,.10);
+
+    border:
+        1px solid rgba(255,191,71,.15);
+}
+
+.mm-status.warning .mm-status-dot {
+    background: #ffbf47;
+}
+
+.mm-status.critical {
+    color: #ff5964;
+
+    background:
+        rgba(255,89,100,.10);
+
+    border:
+        1px solid rgba(255,89,100,.15);
+}
+
+.mm-status.critical .mm-status-dot {
+    background: #ff5964;
+}
+
+
+/* =========================================================
+   FAILURE RISK
+   ========================================================= */
+
+.mm-risk {
+    font-weight: 900;
+}
+
+.mm-risk.low {
+    color: #39d98a;
+}
+
+.mm-risk.medium {
+    color: #ffbf47;
+}
+
+.mm-risk.high {
+    color: #ff5964;
+}
+
+
+/* =========================================================
+   RUL
+   ========================================================= */
+
+.mm-analyze-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 7px 10px;
+    font-size: 8px;
+    text-decoration: none;
+}
+
+.mm-rul {
+    color: #a9b7c9;
+}
+
+.mm-rul.none {
+    color: #65758c;
+}
+
+
+/* =========================================================
+   HEALTH
+   ========================================================= */
+
+.mm-health {
+    font-weight: 900;
+}
+
+.mm-health.good {
+    color: #39d98a;
+}
+
+.mm-health.warning {
+    color: #ffbf47;
+}
+
+.mm-health.critical {
+    color: #ff5964;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.mm-empty {
+    padding: 45px 20px;
+
+    text-align: center;
+
+    color: #647590;
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width: 900px) {
+
+    .mm-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .mm-panel-head {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+}
+
+@media(max-width: 600px) {
+
+    .mm-panel-head {
+        flex-direction: column;
+    }
+
+    .mm-count {
+        align-self: flex-start;
+    }
+
+}
+</style>
+
+<div class="mm-page">
+
+```
+<!-- =====================================================
+     SUMMARY
+     Dataset active banner is intentionally NOT included
+     here because base.html already provides it.
+     ===================================================== -->
+
+{% set healthy_count =
+    machines
+    |selectattr("status", "equalto", "healthy")
+    |list
+    |length
+%}
+
+{% set warning_count =
+    machines
+    |selectattr("status", "equalto", "warning")
+    |list
+    |length
+%}
+
+{% set critical_count =
+    machines
+    |selectattr("status", "equalto", "critical")
+    |list
+    |length
+%}
+
+
+<section class="mm-summary">
+
+
+    <!-- HEALTHY -->
+
+    <div class="mm-card healthy">
+
+        <span class="mm-card-label">
+            Healthy Machines
+        </span>
+
+        <strong class="mm-card-value">
+            {{ healthy_count }}
+        </strong>
+
+        <span class="mm-card-sub">
+            Operating normally
+        </span>
+
+    </div>
+
+
+    <!-- WARNING -->
+
+    <div class="mm-card warning">
+
+        <span class="mm-card-label">
+            Warning Machines
+        </span>
+
+        <strong class="mm-card-value">
+            {{ warning_count }}
+        </strong>
+
+        <span class="mm-card-sub">
+            Monitor closely
+        </span>
+
+    </div>
+
+
+    <!-- CRITICAL -->
+
+    <div class="mm-card critical">
+
+        <span class="mm-card-label">
+            Critical Machines
+        </span>
+
+        <strong class="mm-card-value">
+            {{ critical_count }}
+        </strong>
+
+        <span class="mm-card-sub">
+            Immediate attention
+        </span>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     MACHINE MONITORING TABLE
+     ===================================================== -->
+
+<section class="mm-panel">
+
+
+    <div class="mm-panel-head">
+
+        <div>
+
+            <div class="mm-panel-title">
+                Machine Monitoring
+            </div>
+
+            <div class="mm-panel-subtitle">
+                Live machine risk and maintenance status
+            </div>
+
+        </div>
+
+
+        <span class="mm-count">
+
+            {{ machines|length }}
+            MACHINES
+
+        </span>
+
+    </div>
+
+
+    <div class="mm-table-wrap">
+
+        <table class="mm-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Machine
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Failure Risk
+                    </th>
+
+                    <th>
+                        Estimated RUL
+                    </th>
+
+                    <th>
+                        Health
+                    </th>
+
+                    <th>
+                        Analyze
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for machine in machines %}
+
+                    {% set risk =
+                        machine.failureProbabilityPct|float
+                    %}
+
+                    {% set health =
+                        machine.healthScore|float
+                    %}
+
+                    {% set status =
+                        machine.status|lower
+                    %}
+
+
+                    <tr>
+
+
+                        <!-- MACHINE -->
+
+                        <td>
+
+                            <a
+                                class="mm-machine-link"
+                                href="/analyze?engine={{ machine.engineId }}">
+
+                                <div class="mm-machine">
+
+                                    MS-{{ machine.engineId }}
+
+                                </div>
+
+                                <div class="mm-machine-sub">
+
+                                    Engine {{ machine.engineId }}
+
+                                </div>
+
+                            </a>
+
+                        </td>
+
+
+                        <!-- STATUS -->
+
+                        <td>
+
+                            <span
+                                class="mm-status {{ status }}">
+
+                                <span
+                                    class="mm-status-dot">
+                                </span>
+
+                                {{ status }}
+
+                            </span>
+
+                        </td>
+
+
+                        <!-- FAILURE RISK -->
+
+                        <td>
+
+                            {% if risk >= 60 %}
+
+                                <span class="mm-risk high">
+                                    {{ "%.2f"|format(risk) }}%
+                                </span>
+
+                            {% elif risk >= 30 %}
+
+                                <span class="mm-risk medium">
+                                    {{ "%.2f"|format(risk) }}%
+                                </span>
+
+                            {% else %}
+
+                                <span class="mm-risk low">
+                                    {{ "%.2f"|format(risk) }}%
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ESTIMATED RUL -->
+
+                        <td>
+
+                            {% if machine.estimatedRUL is not none %}
+
+                                <span class="mm-rul">
+
+                                    {{ "%.0f"|format(
+                                        machine.estimatedRUL
+                                    ) }}
+
+                                    cycles
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="mm-rul none">
+                                    None cycles
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- HEALTH -->
+
+                        <td>
+
+                            {% if health >= 70 %}
+
+                                <span class="mm-health good">
+
+                                    {{ "%.0f"|format(health) }}%
+
+                                </span>
+
+                            {% elif health >= 40 %}
+
+                                <span class="mm-health warning">
+
+                                    {{ "%.0f"|format(health) }}%
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="mm-health critical">
+
+                                    {{ "%.0f"|format(health) }}%
+
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ANALYZE -->
+
+                        <td>
+                            <a class="btn secondary mm-analyze-btn" href="/analyze?engine={{ machine.engineId }}">
+                                Analyze
+                            </a>
+                        </td>
+
+
+                    </tr>
+
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="6">
+
+                            <div class="mm-empty">
+
+                                No machine records available.
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+```
+
+</div>
+
+{% endblock %}

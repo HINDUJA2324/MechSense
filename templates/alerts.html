@@ -1,0 +1,1564 @@
+{% extends 'base.html' %}
+
+{% block title %}Alerts · MechSense{% endblock %}
+{% block heading %}Alerts{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     ALERTS PAGE
+     ORIGINAL UI PRESERVED
+     ONLY OPEN BUTTON + RIGHT SIDE DETAILS PANEL ADDED
+     ============================================================ -->
+
+<style>
+/* ============================================================
+   OPEN BUTTON
+   ============================================================ */
+
+.mechsense-alert-open {
+  appearance: none;
+  border: 1px solid rgba(141,108,255,.30);
+  background: rgba(141,108,255,.12);
+  color: #c8bdff;
+
+  border-radius: 6px;
+  padding: 7px 12px;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  transition:
+    transform .15s ease,
+    filter .15s ease,
+    background .15s ease;
+}
+
+.mechsense-alert-open:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  background: rgba(141,108,255,.20);
+}
+
+.mechsense-alert-open.critical {
+  border-color: rgba(255,89,100,.30);
+  background: rgba(255,89,100,.10);
+  color: #ff6974;
+}
+
+.mechsense-alert-open.warning {
+  border-color: rgba(255,191,71,.30);
+  background: rgba(255,191,71,.10);
+  color: #ffbf47;
+}
+
+.mechsense-alert-open-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 9px currentColor;
+}
+
+
+/* ============================================================
+   RIGHT SIDE ALERT PANEL
+   ============================================================ */
+
+.mechsense-alert-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.mechsense-alert-drawer.open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+
+/* Dark background */
+
+.mechsense-alert-backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(2,5,10,.62);
+
+  backdrop-filter: blur(3px);
+
+  opacity: 0;
+
+  transition: opacity .20s ease;
+}
+
+.mechsense-alert-drawer.open
+.mechsense-alert-backdrop {
+  opacity: 1;
+}
+
+
+/* Panel */
+
+.mechsense-alert-panel {
+  position: absolute;
+
+  top: 0;
+  right: 0;
+
+  width: min(455px, 94vw);
+  height: 100%;
+
+  overflow-y: auto;
+
+  padding: 24px;
+
+  background:
+    linear-gradient(
+      160deg,
+      #101a2a 0%,
+      #08111d 100%
+    );
+
+  border-left: 1px solid #2a3951;
+
+  box-shadow:
+    -24px 0 70px rgba(0,0,0,.48);
+
+  transform: translateX(102%);
+
+  transition:
+    transform .24s ease;
+}
+
+.mechsense-alert-drawer.open
+.mechsense-alert-panel {
+  transform: translateX(0);
+}
+
+
+/* Close */
+
+.mechsense-alert-close {
+  position: absolute;
+
+  top: 16px;
+  right: 17px;
+
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid #2b3a52;
+
+  background: #0b1421;
+  color: #aab6c8;
+
+  border-radius: 8px;
+
+  font-size: 21px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.mechsense-alert-close:hover {
+  color: #fff;
+  border-color: #52627d;
+}
+
+
+/* Header */
+
+.mechsense-alert-header {
+  padding-right: 45px;
+  margin-bottom: 20px;
+}
+
+.mechsense-alert-eyebrow {
+  font-size: 8px;
+  letter-spacing: .12em;
+
+  color: #7f91aa;
+
+  font-weight: 800;
+}
+
+.mechsense-alert-header h2 {
+  font-size: 24px;
+  margin: 7px 0 4px;
+}
+
+.mechsense-alert-header p {
+  font-size: 11px;
+  color: #7f91a8;
+  margin: 0;
+}
+
+
+/* Severity */
+
+.mechsense-alert-severity {
+  display: inline-flex;
+
+  margin-top: 12px;
+
+  padding: 6px 9px;
+
+  border-radius: 6px;
+
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.mechsense-alert-severity.critical {
+  color: #ff6873;
+
+  background:
+    rgba(255,89,100,.10);
+
+  border:
+    1px solid rgba(255,89,100,.22);
+}
+
+.mechsense-alert-severity.warning {
+  color: #ffbf47;
+
+  background:
+    rgba(255,191,71,.10);
+
+  border:
+    1px solid rgba(255,191,71,.22);
+}
+
+
+/* ============================================================
+   INFORMATION CARDS
+   ============================================================ */
+
+.mechsense-alert-info-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 9px;
+
+  margin: 16px 0;
+}
+
+.mechsense-alert-info-card {
+  padding: 12px;
+
+  border:
+    1px solid #1d2a3e;
+
+  background: #0b1421;
+
+  border-radius: 9px;
+}
+
+.mechsense-alert-info-card span {
+  display: block;
+
+  font-size: 8px;
+
+  color: #718198;
+
+  margin-bottom: 6px;
+}
+
+.mechsense-alert-info-card b {
+  font-size: 13px;
+
+  color: #edf3fb;
+
+  line-height: 1.35;
+}
+
+
+/* ============================================================
+   SECTIONS
+   ============================================================ */
+
+.mechsense-alert-section {
+  border-top:
+    1px solid #1c293d;
+
+  padding-top: 17px;
+
+  margin-top: 17px;
+}
+
+.mechsense-alert-section h3 {
+  font-size: 13px;
+
+  margin:
+    0 0 5px;
+}
+
+.mechsense-alert-section p {
+  font-size: 9px;
+
+  color: #718198;
+
+  margin:
+    0 0 11px;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   PRECAUTIONS
+   ============================================================ */
+
+.mechsense-alert-precautions {
+  margin: 0;
+
+  padding: 0;
+
+  list-style: none;
+
+  display: grid;
+
+  gap: 8px;
+}
+
+.mechsense-alert-precautions li {
+  position: relative;
+
+  padding:
+    10px
+    10px
+    10px
+    28px;
+
+  border:
+    1px solid #1b293d;
+
+  background: #0b1421;
+
+  border-radius: 8px;
+
+  color: #c8d2df;
+
+  font-size: 9px;
+
+  line-height: 1.45;
+}
+
+.mechsense-alert-precautions li::before {
+  content: "✓";
+
+  position: absolute;
+
+  left: 10px;
+  top: 9px;
+
+  color: #49dc9b;
+
+  font-weight: 900;
+
+  font-size: 11px;
+}
+
+
+/* ============================================================
+   COST SECTION
+   ============================================================ */
+
+.mechsense-alert-cost-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 9px;
+}
+
+.mechsense-alert-cost-card {
+  padding: 11px;
+
+  border:
+    1px solid #1d2a3e;
+
+  background: #0b1421;
+
+  border-radius: 9px;
+}
+
+.mechsense-alert-cost-card span {
+  display: block;
+
+  color: #718198;
+
+  font-size: 8px;
+}
+
+.mechsense-alert-cost-card b {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 13px;
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.mechsense-alert-footer {
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 20px;
+
+  padding-top: 15px;
+
+  border-top:
+    1px solid #1c293d;
+}
+
+.mechsense-alert-footer a,
+.mechsense-alert-footer button {
+  flex: 1;
+
+  text-align: center;
+
+  padding: 10px;
+
+  border-radius: 7px;
+
+  font: inherit;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.mechsense-alert-analyze {
+  background: #8d6cff;
+
+  color: #fff;
+
+  border:
+    1px solid #8d6cff;
+}
+
+.mechsense-alert-analyze:hover {
+  filter: brightness(1.08);
+}
+
+.mechsense-alert-close-button {
+  background: #0b1421;
+
+  color: #aab6c8;
+
+  border:
+    1px solid #2a3951;
+}
+
+.mechsense-alert-close-button:hover {
+  color: #fff;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 650px) {
+
+  .mechsense-alert-panel {
+    width: 100%;
+
+    padding: 18px;
+  }
+
+  .mechsense-alert-info-grid,
+  .mechsense-alert-cost-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+}
+</style>
+
+
+<!-- ============================================================
+     ORIGINAL ALERT METRIC CARDS
+     ============================================================ -->
+
+<section class="metric-grid">
+
+  <div class="metric-card bad">
+    <span>Critical Alerts</span>
+
+    <strong>
+      {{alerts|selectattr('severity','equalto','Critical')|list|length}}
+    </strong>
+
+    <em>Immediate review</em>
+  </div>
+
+
+  <div class="metric-card warn">
+    <span>Warnings</span>
+
+    <strong>
+      {{alerts|selectattr('severity','equalto','Warning')|list|length}}
+    </strong>
+
+    <em>Monitor closely</em>
+  </div>
+
+
+  <div class="metric-card">
+    <span>Open Alerts</span>
+
+    <strong>
+      {{alerts|length}}
+    </strong>
+
+    <em>Generated by model</em>
+  </div>
+
+</section>
+
+
+<!-- ============================================================
+     ORIGINAL ACTIVE ALERTS TABLE
+     ============================================================ -->
+
+<section class="panel">
+
+  <div class="panel-head">
+
+    <div>
+      <h2>Active Alerts</h2>
+
+      <p>
+        Machine-level risk events from the LSTM classifier
+      </p>
+    </div>
+
+  </div>
+
+
+  <div class="table-scroll">
+
+    <table class="data-table">
+
+      <thead>
+
+        <tr>
+          <th>Alert</th>
+          <th>Machine</th>
+          <th>Severity</th>
+          <th>Type</th>
+          <th>Risk</th>
+          <th>Cycle</th>
+          <th>Status</th>
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+      {% for a in alerts %}
+
+        <tr>
+
+          <td>
+            <b>{{a.id}}</b>
+          </td>
+
+
+          <td>
+            MS-{{ a.engineId }}
+          </td>
+
+
+          <td>
+
+            <span class="status {{'critical' if a.severity=='Critical' else 'warning'}}">
+
+              {{a.severity}}
+
+            </span>
+
+          </td>
+
+
+          <td>
+            {{a.type}}
+          </td>
+
+
+          <td>
+            {{a.probability}}%
+          </td>
+
+
+          <td>
+            {{a.cycle}}
+          </td>
+
+
+          <td>
+
+            <!--
+              ORIGINAL STATUS LOOK
+              BUT NOW CLICKABLE
+            -->
+
+            <button
+              type="button"
+              class="mechsense-alert-open {{'critical' if a.severity=='Critical' else 'warning'}}"
+              data-alert-index="{{ loop.index0 }}"
+              onclick="openMechSenseAlert(this)"
+            >
+
+              <span class="mechsense-alert-open-dot"></span>
+
+              OPEN
+
+            </button>
+
+          </td>
+
+        </tr>
+
+
+      {% else %}
+
+        <tr>
+
+          <td colspan="7">
+            No active alerts.
+          </td>
+
+        </tr>
+
+      {% endfor %}
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+
+<!-- ============================================================
+     RIGHT SIDE ALERT DETAILS PANEL
+     ============================================================ -->
+
+<div
+  id="mechSenseAlertDrawer"
+  class="mechsense-alert-drawer"
+  aria-hidden="true"
+>
+
+  <!-- BACKDROP -->
+
+  <div
+    class="mechsense-alert-backdrop"
+    onclick="closeMechSenseAlert()"
+  ></div>
+
+
+  <!-- PANEL -->
+
+  <aside
+    class="mechsense-alert-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mechSenseAlertTitle"
+  >
+
+    <!-- CLOSE -->
+
+    <button
+      type="button"
+      class="mechsense-alert-close"
+      onclick="closeMechSenseAlert()"
+      aria-label="Close alert"
+    >
+      ×
+    </button>
+
+
+    <!-- HEADER -->
+
+    <div class="mechsense-alert-header">
+
+      <div class="mechsense-alert-eyebrow">
+        ALERT DETAILS
+      </div>
+
+
+      <h2 id="mechSenseAlertTitle">
+        ALT-00
+      </h2>
+
+
+      <p id="mechSenseAlertMachine">
+        Machine MS-00 · Failure risk
+      </p>
+
+
+      <span
+        id="mechSenseAlertSeverity"
+        class="mechsense-alert-severity critical"
+      >
+        CRITICAL
+      </span>
+
+    </div>
+
+
+    <!-- ========================================================
+         MAIN INFORMATION
+         ======================================================== -->
+
+    <div class="mechsense-alert-info-grid">
+
+      <div class="mechsense-alert-info-card">
+        <span>Failure Risk</span>
+        <b id="mechSenseAlertRisk">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Health Score</span>
+        <b id="mechSenseAlertHealth">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Current Cycle</span>
+        <b id="mechSenseAlertCycle">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Estimated RUL</span>
+        <b id="mechSenseAlertRul">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Maintenance Type</span>
+        <b id="mechSenseAlertMaintenanceType">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Maintenance Time</span>
+        <b id="mechSenseAlertMaintenanceTime">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Works For</span>
+        <b id="mechSenseAlertOperatingTime">—</b>
+      </div>
+
+
+      <div class="mechsense-alert-info-card">
+        <span>Estimated Cost</span>
+        <b id="mechSenseAlertCost">—</b>
+      </div>
+
+    </div>
+
+
+
+    <!-- ========================================================
+         WHY ALERT
+         ======================================================== -->
+
+    <section class="mechsense-alert-section">
+
+      <h3>
+        Why this alert is open
+      </h3>
+
+      <p id="mechSenseAlertReason">
+        —
+      </p>
+
+    </section>
+
+
+
+    <!-- ========================================================
+         PRECAUTIONS
+         ======================================================== -->
+
+    <section class="mechsense-alert-section">
+
+      <h3>
+        Precautions to follow
+      </h3>
+
+      <p>
+        Follow these steps before and during maintenance.
+      </p>
+
+
+      <ul
+        id="mechSenseAlertPrecautions"
+        class="mechsense-alert-precautions"
+      >
+      </ul>
+
+    </section>
+
+
+
+    <!-- ========================================================
+         MAINTENANCE IMPACT
+         ======================================================== -->
+
+    <section class="mechsense-alert-section">
+
+      <h3>
+        Maintenance impact
+      </h3>
+
+      <p>
+        Model-based planning estimates for this machine.
+      </p>
+
+
+      <div class="mechsense-alert-cost-grid">
+
+        <div class="mechsense-alert-cost-card">
+
+          <span>
+            Potential failure exposure
+          </span>
+
+          <b id="mechSenseAlertExposure">
+            —
+          </b>
+
+        </div>
+
+
+        <div class="mechsense-alert-cost-card">
+
+          <span>
+            Estimated savings
+          </span>
+
+          <b id="mechSenseAlertSavings">
+            —
+          </b>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ========================================================
+         FOOTER
+         ======================================================== -->
+
+    <div class="mechsense-alert-footer">
+
+      <a
+        id="mechSenseAlertAnalyze"
+        class="mechsense-alert-analyze"
+        href="#"
+      >
+        Open machine analysis
+      </a>
+
+
+      <button
+        type="button"
+        class="mechsense-alert-close-button"
+        onclick="closeMechSenseAlert()"
+      >
+        Close
+      </button>
+
+    </div>
+
+  </aside>
+
+</div>
+
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+<script>
+
+/* ==============================================================
+   SERVER ALERT DATA
+
+   Flask already sends:
+
+   id
+   engineId
+   severity
+   type
+   probability
+   cycle
+   healthScore
+   rul
+   maintenance
+   ============================================================== */
+
+const MECHSENSE_ALERTS = {{ alerts|tojson }};
+
+
+
+/* ==============================================================
+   SAFE HTML
+   ============================================================== */
+
+function mechSenseEscape(value) {
+
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    function(ch) {
+
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[ch];
+
+    }
+  );
+
+}
+
+
+
+/* ==============================================================
+   MONEY FORMAT
+   ============================================================== */
+
+function mechSenseMoney(value) {
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number) || number <= 0) {
+    return '—';
+  }
+
+  return '₹' + number.toLocaleString('en-IN');
+
+}
+
+
+
+/* ==============================================================
+   MACHINE-SPECIFIC MAINTENANCE FALLBACKS
+
+   These make sure every machine gets different guidance even if
+   the maintenance profile is missing.
+   ============================================================== */
+
+function mechSenseMaintenanceData(alert) {
+
+  const maintenance =
+    alert.maintenance || {};
+
+  const risk =
+    Number(alert.probability || 0);
+
+  const machineId =
+    String(alert.engineId ?? '');
+
+  const numericId =
+    parseInt(
+      machineId.replace(/\D/g, ''),
+      10
+    ) || 0;
+
+
+  const maintenanceTypes = [
+
+    'Cooling & thermal inspection',
+
+    'Bearing & rotating assembly service',
+
+    'Lubrication system service',
+
+    'Drive-train preventive maintenance',
+
+    'Sensor & control-system inspection',
+
+    'Full preventive service'
+
+  ];
+
+
+  const precautionSets = [
+
+    [
+      'Reduce machine load before the next high-demand cycle.',
+      'Inspect coolant level and airflow path.',
+      'Check temperature rise at idle and under load.',
+      'Do not return to full load until thermal readings stabilize.'
+    ],
+
+    [
+      'Avoid sudden speed changes.',
+      'Inspect bearing housing for abnormal noise or vibration.',
+      'Check shaft and coupling alignment.',
+      'Confirm vibration trend is stable after service.'
+    ],
+
+    [
+      'Check lubricant level and contamination.',
+      'Inspect seals for leakage.',
+      'Verify lubricant flow before restarting.',
+      'Use the approved lubricant grade for refill.'
+    ],
+
+    [
+      'Keep the machine below peak load until inspection.',
+      'Inspect belts, couplings and alignment.',
+      'Check motor current and drive temperature.',
+      'Run a controlled test cycle after maintenance.'
+    ],
+
+    [
+      'Verify sensor connectors and cable condition.',
+      'Check sensor calibration against a reference.',
+      'Review sudden sensor spikes before clearing the alert.',
+      'Confirm stable readings across consecutive cycles.'
+    ],
+
+    [
+      'Schedule a controlled maintenance window.',
+      'Inspect mechanical, thermal and electrical systems.',
+      'Record replaced parts and abnormal findings.',
+      'Perform a post-service validation cycle.'
+    ]
+
+  ];
+
+
+  const fallbackType =
+    maintenance.type ||
+    maintenanceTypes[
+      numericId % maintenanceTypes.length
+    ];
+
+
+  let precautions =
+    Array.isArray(maintenance.precautions)
+      ? maintenance.precautions
+      : [];
+
+
+  if (!precautions.length) {
+
+    precautions =
+      precautionSets[
+        numericId % precautionSets.length
+      ];
+
+  }
+
+
+  let reason =
+    maintenance.reason;
+
+
+  if (!reason) {
+
+    reason =
+      risk >= 85
+        ? 'High model failure risk requires immediate inspection and controlled maintenance.'
+        : 'Elevated model risk requires inspection and closer monitoring.';
+
+  }
+
+
+  return {
+
+    type: fallbackType,
+
+    reason: reason,
+
+    maintenanceTimeHours:
+      maintenance.maintenanceTimeHours ??
+      '—',
+
+    estimatedOperatingHours:
+      maintenance.estimatedOperatingHours ??
+      '—',
+
+    operatingWindow:
+      maintenance.operatingWindow ||
+      '—',
+
+    estimatedCostINR:
+      maintenance.estimatedCostINR ??
+      0,
+
+    potentialFailureCostINR:
+      maintenance.potentialFailureCostINR ??
+      0,
+
+    estimatedSavingsINR:
+      maintenance.estimatedSavingsINR ??
+      0,
+
+    precautions: precautions
+
+  };
+
+}
+
+
+
+/* ==============================================================
+   ALERT SOUND
+
+   Plays only after the user clicks OPEN.
+   ============================================================== */
+
+function mechSenseAlertSound() {
+
+  try {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+
+    if (!AudioContext) {
+      return;
+    }
+
+
+    const context =
+      new AudioContext();
+
+
+    const now =
+      context.currentTime;
+
+
+    const oscillator =
+      context.createOscillator();
+
+
+    const gain =
+      context.createGain();
+
+
+    oscillator.type =
+      'sine';
+
+
+    oscillator.frequency.setValueAtTime(
+      880,
+      now
+    );
+
+
+    oscillator.frequency.setValueAtTime(
+      1175,
+      now + 0.09
+    );
+
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      now
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.16,
+      now + 0.015
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      now + 0.24
+    );
+
+
+    oscillator.connect(gain);
+
+    gain.connect(
+      context.destination
+    );
+
+
+    oscillator.start(now);
+
+    oscillator.stop(
+      now + 0.25
+    );
+
+
+    setTimeout(
+      function() {
+
+        try {
+          context.close();
+        } catch (_) {}
+
+      },
+      400
+    );
+
+  } catch (_) {
+
+    /* Sound failure must never prevent the panel from opening. */
+
+  }
+
+}
+
+
+
+/* ==============================================================
+   OPEN ALERT
+   ============================================================== */
+
+function openMechSenseAlert(button) {
+
+  const index =
+    Number(
+      button.getAttribute(
+        'data-alert-index'
+      )
+    );
+
+
+  const alert =
+    MECHSENSE_ALERTS[index];
+
+
+  if (!alert) {
+
+    console.error(
+      'MechSense alert not found:',
+      index
+    );
+
+    return;
+
+  }
+
+
+  /* Sound starts from the user's click. */
+
+  mechSenseAlertSound();
+
+
+  const maintenance =
+    mechSenseMaintenanceData(
+      alert
+    );
+
+
+  const drawer =
+    document.getElementById(
+      'mechSenseAlertDrawer'
+    );
+
+
+  /* ==========================================================
+     HEADER
+     ========================================================== */
+
+  document.getElementById(
+    'mechSenseAlertTitle'
+  ).textContent =
+    alert.id || 'Alert';
+
+
+  document.getElementById(
+    'mechSenseAlertMachine'
+  ).textContent =
+    `Machine MS-${alert.engineId} · ${alert.type || 'Failure risk'}`;
+
+
+  const severity =
+    String(
+      alert.severity ||
+      'Warning'
+    );
+
+
+  const severityElement =
+    document.getElementById(
+      'mechSenseAlertSeverity'
+    );
+
+
+  severityElement.textContent =
+    severity.toUpperCase();
+
+
+  severityElement.className =
+    'mechsense-alert-severity ' +
+    (
+      severity.toLowerCase() === 'critical'
+        ? 'critical'
+        : 'warning'
+    );
+
+
+
+  /* ==========================================================
+     MAIN VALUES
+     ========================================================== */
+
+  document.getElementById(
+    'mechSenseAlertRisk'
+  ).textContent =
+    `${Number(alert.probability || 0).toFixed(2)}%`;
+
+
+  document.getElementById(
+    'mechSenseAlertHealth'
+  ).textContent =
+    alert.healthScore == null
+      ? '—'
+      : `${alert.healthScore}%`;
+
+
+  document.getElementById(
+    'mechSenseAlertCycle'
+  ).textContent =
+    alert.cycle == null
+      ? '—'
+      : alert.cycle;
+
+
+  document.getElementById(
+    'mechSenseAlertRul'
+  ).textContent =
+    alert.rul == null
+      ? 'Not available'
+      : `${alert.rul} cycles`;
+
+
+  document.getElementById(
+    'mechSenseAlertMaintenanceType'
+  ).textContent =
+    maintenance.type;
+
+
+  document.getElementById(
+    'mechSenseAlertMaintenanceTime'
+  ).textContent =
+    maintenance.maintenanceTimeHours === '—'
+      ? '—'
+      : `${maintenance.maintenanceTimeHours} hrs`;
+
+
+  document.getElementById(
+    'mechSenseAlertOperatingTime'
+  ).textContent =
+    maintenance.operatingWindow !== '—'
+      ? maintenance.operatingWindow
+      : `${maintenance.estimatedOperatingHours} hrs`;
+
+
+  document.getElementById(
+    'mechSenseAlertCost'
+  ).textContent =
+    mechSenseMoney(
+      maintenance.estimatedCostINR
+    );
+
+
+
+  /* ==========================================================
+     REASON
+     ========================================================== */
+
+  document.getElementById(
+    'mechSenseAlertReason'
+  ).textContent =
+    maintenance.reason;
+
+
+
+  /* ==========================================================
+     PRECAUTIONS
+     ========================================================== */
+
+  const precautionList =
+    document.getElementById(
+      'mechSenseAlertPrecautions'
+    );
+
+
+  precautionList.innerHTML =
+    maintenance.precautions
+      .map(
+        function(item) {
+
+          return `
+            <li>
+              ${mechSenseEscape(item)}
+            </li>
+          `;
+
+        }
+      )
+      .join('');
+
+
+
+  /* ==========================================================
+     COST / IMPACT
+     ========================================================== */
+
+  document.getElementById(
+    'mechSenseAlertExposure'
+  ).textContent =
+    mechSenseMoney(
+      maintenance.potentialFailureCostINR
+    );
+
+
+  document.getElementById(
+    'mechSenseAlertSavings'
+  ).textContent =
+    mechSenseMoney(
+      maintenance.estimatedSavingsINR
+    );
+
+
+
+  /* ==========================================================
+     MACHINE ANALYSIS LINK
+     ============================================================== */
+
+  document.getElementById(
+    'mechSenseAlertAnalyze'
+  ).href =
+    `/analyze?engine=${encodeURIComponent(
+      alert.engineId
+    )}`;
+
+
+
+  /* ==========================================================
+     SHOW PANEL
+     ========================================================== */
+
+  drawer.classList.add(
+    'open'
+  );
+
+
+  drawer.setAttribute(
+    'aria-hidden',
+    'false'
+  );
+
+
+  /*
+    Do not change the base sidebar.
+    We only prevent the underlying page from scrolling.
+  */
+
+  document.body.style.overflow =
+    'hidden';
+
+}
+
+
+
+/* ==============================================================
+   CLOSE ALERT
+   ============================================================== */
+
+function closeMechSenseAlert() {
+
+  const drawer =
+    document.getElementById(
+      'mechSenseAlertDrawer'
+    );
+
+
+  drawer.classList.remove(
+    'open'
+  );
+
+
+  drawer.setAttribute(
+    'aria-hidden',
+    'true'
+  );
+
+
+  document.body.style.overflow =
+    '';
+
+}
+
+
+
+/* ==============================================================
+   ESC KEY
+   ============================================================== */
+
+document.addEventListener(
+  'keydown',
+  function(event) {
+
+    if (
+      event.key === 'Escape'
+    ) {
+
+      closeMechSenseAlert();
+
+    }
+
+  }
+);
+
+</script>
+
+{% endblock %}

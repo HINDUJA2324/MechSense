@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MechSense{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-label="MechSense logo">
+        <svg viewBox="0 0 48 48" role="img" aria-hidden="true">
+          <defs><linearGradient id="msg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19d6ff"/><stop offset="1" stop-color="#8d6cff"/></linearGradient></defs>
+          <circle cx="24" cy="24" r="17" fill="none" stroke="url(#msg)" stroke-width="2.2" opacity=".95"/>
+          <circle cx="24" cy="24" r="7" fill="#0a1421" stroke="#19d6ff" stroke-width="2"/>
+          <path d="M24 4v7M24 37v7M4 24h7M37 24h7M10 10l5 5M33 33l5 5M38 10l-5 5M15 33l-5 5" stroke="#dce8ff" stroke-width="2" stroke-linecap="round" opacity=".85"/>
+          <path d="M19 24h10M24 19v10" stroke="#19d6ff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <div><strong>MechSense</strong><small>AI · Predictive Maintenance</small></div>
+    </div>
+    <div class="side-label">WORKSPACE</div>
+    <nav class="side-nav">
+      {% set links=[
+  ('dashboard','/','⌂','Dashboard'),
+  ('machines','/machines','▣','Machine Monitoring'),
+  ('alerts','/alerts','△','Alerts & Precautions'),
+  ('testing','/lstm-testing','⇧','LSTM CSV Analysis'),
+  ('forecast','/forecast','⌁','Time Series Forecast'),
+  ('maintenance','/maintenance','↻','Maintenance'),
+  ('reports','/reports','▤','Reports'),
+  ('settings','/settings','⚙','Settings')
+] %}
+      {% for key,href,icon,label in links %}<a class="side-link {{ 'active' if active==key else '' }}" href="{{href}}"><span>{{icon}}</span>{{label}}</a>{% endfor %}
+    </nav>
+    <div class="side-bottom"><div class="api-dot"></div><div><b>System Online</b><small>Prediction engine connected</small></div></div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div><span class="eyebrow">MECHSENSE / {{ active|upper }}</span><h1>{% block heading %}Predictive Maintenance{% endblock %}</h1></div>
+      <div class="top-actions"><span class="live-pill"><i></i> Live</span><span class="date-pill">C-MAPSS FD001</span></div>
+    </header>
+    <div class="content">
+      {% if dataset_uploaded %}
+      <div class="dataset-banner uploaded"><div><span class="dataset-dot"></span><div><b>Uploaded dataset active</b><small>{{dataset_name}} · {{dataset_rows|int}} rows · Default FD001 data is unchanged</small></div></div><a class="btn secondary" href="/reset-default">← Back to default FD001</a></div>
+      {% else %}
+      <div class="dataset-banner"><div><span class="dataset-dot"></span><div><b>Default dataset active</b><small>C-MAPSS FD001 · {{dataset_rows|int}} test readings · Ready for prediction</small></div></div><a class="btn secondary" href="/lstm-testing">Upload your CSV</a></div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>window.MECHSENSE={threshold:{{threshold_pct}},apiBase:'http://127.0.0.1:8000'};</script>
+{% block scripts %}{% endblock %}
+</body></html>

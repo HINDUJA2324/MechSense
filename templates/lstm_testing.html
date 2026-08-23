@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}CSV Batch Prediction · MechSense{% endblock %}
+{% block heading %}CSV Batch Prediction{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-head"><div><h2>Upload your machine CSV</h2><p>Upload a separate dataset. Your original C-MAPSS FD001 dataset is never replaced.</p></div><span class="tag">{% if active_mode == 'industrial' %}Industrial LSTM · {{seq}} rows{% else %}C-MAPSS LSTM · {{seq}} cycles{% endif %}</span></div>
+  <form class="upload-form" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button class="btn primary" type="submit">Upload & Analyze</button>
+  </form>
+  <div class="upload-help"><b>Validation</b><span>MechSense rejects unsupported, incomplete, non-numeric, or non-time-series CSVs. A failed upload is never analyzed or activated.</span><b>C-MAPSS</b><span>Requires engine/unit ID, cycle, all trained C-MAPSS features, numeric sensor values, and at least {{seq}} readings per engine.</span><b>Industrial</b><span>Requires a machine ID, cycle or Timestamp, the five physical sensor columns, numeric values, and at least {{seq}} readings per machine.</span><b>After a valid upload</b><span>The uploaded dataset becomes active; the original FD001 dataset remains unchanged. Forecasts are generated only when real ordered readings exist.</span></div>
+  <details><summary>Required model columns</summary><p class="muted">C-MAPSS: engine/unit ID + cycle + {{features|join(', ')}}</p><p class="muted">Industrial: Machine ID + cycle/Timestamp + Air temperature [K], Process temperature [K], Rotational speed [rpm], Torque [Nm], Tool wear [min]</p></details>
+</section>
+{% with messages=get_flashed_messages() %}{% for m in messages %}<div class="notice {% if 'successfully' in m %}success{% else %}error{% endif %}">{{m}}</div>{% endfor %}{% endwith %}
+{% if result %}
+<section class="metric-grid">
+  <div class="metric-card"><span>Uploaded rows</span><strong>{{result.rows}}</strong><em>{{result.filename}}</em></div>
+  <div class="metric-card"><span>Machines analyzed</span><strong>{{result.machines}}</strong><em>{{result.model}}</em></div>
+  <div class="metric-card bad"><span>Critical</span><strong>{{result.critical}}</strong><em>Immediate review</em></div>
+  <div class="metric-card warn"><span>Warning</span><strong>{{result.warning}}</strong><em>Monitor closely</em></div>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>CSV Prediction Results</h2><p>Highest-risk machines are shown first. This uploaded dataset is now active across MechSense.</p></div><a class="btn secondary" href="/">View dashboard</a></div>
+  <div class="table-scroll"><table class="data-table"><thead><tr><th>Record</th><th>Machine / Product</th><th>Failure Risk</th><th>Health</th><th>Status</th><th>Maintenance</th><th>Analyze</th></tr></thead><tbody>
+  {% for r in result.predictions[:100] %}
+    <tr><td><b>#{{r.row}}</b></td><td>{{r.product_id if r.product_id is defined else r.engine_id}}</td><td>{{r.failure_probability}}%</td><td>{{r.health_score}}%</td><td><span class="status {{r.status}}">{{r.status|upper}}</span></td><td><b>{{r.maintenance_priority}}</b><small>{{r.maintenance_action}}</small></td><td><a class="btn secondary" href="/analyze?engine={{r.engine_id}}">Analyze</a></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+  {% if result.predictions|length > 100 %}<p class="muted">Showing the 100 highest-risk records out of {{result.predictions|length}} analyzed records.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

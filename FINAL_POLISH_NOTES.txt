@@ -1,0 +1,35 @@
+MECHSENSE FINAL POLISHED VERSION
+Updated: 17-Aug-2026
+
+FINAL UI CHANGES
+1. Removed the Sensor Intelligence bar/line chart from the Machine Intelligence page.
+2. Removed Risk Interpretation and API Intelligence blocks from the Machine Intelligence page.
+3. Replaced the removed chart area with a compact, complete machine maintenance view:
+   - Failure risk
+   - Estimated RUL
+   - Estimated maintenance cost
+   - Failure exposure
+   - Maintenance type
+   - Estimated service time
+   - Estimated operating window before intervention
+   - Estimated savings
+   - Live sensor readings
+   - Machine-specific precautions
+   - Service summary and planning note
+4. Kept maintenance information machine-specific through the existing maintenance_profile() logic.
+5. Dashboard temperature graph now uses temperatureTrend, has connected points, no shaded/fill region, and works for uploaded industrial CSV data.
+6. Dashboard now uses a compact professional layout with six KPI cards, temperature trend, risk doughnut, model quality and highest-risk machine queue.
+7. Removed unnecessary API Center / Analyze / Forecast entries from the main sidebar. Forecast remains available from machine analysis.
+8. Increased sidebar typography and redesigned the MechSense logo with a clean machine/AI SVG mark.
+9. Improved spacing, card hierarchy, typography, colors and responsive behavior.
+10. Default FD001 data and uploaded CSV data remain separate; the existing backend dataset switching behavior is unchanged.
+
+VALIDATION
+- validate_project.py: PASSED
+- python -m py_compile app.py: PASSED
+
+RUN
+1. Activate the existing virtual environment.
+2. Run: python app.py
+3. Open: http://127.0.0.1:5000
+4. If the browser shows an older layout, hard refresh with Ctrl+F5.

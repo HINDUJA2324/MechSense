@@ -1,0 +1,15 @@
+<!doctype html><html><head><title>MechSense</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><nav><b>⚙ MechSense</b><a href="/">Dashboard</a><a href="/lstm-testing">LSTM Testing</a></nav>
+<main><h1>Predictive Maintenance Dashboard</h1><div class="grid">
+<div class="card"><small>Training readings</small><strong>{{train_rows}}</strong></div>
+<div class="card"><small>Test readings</small><strong>{{test_rows}}</strong></div>
+<div class="card"><small>Training engines</small><strong>{{engines}}</strong></div>
+<div class="card"><small>LSTM F1</small><strong>{{'%.2f'|format(meta.metrics.f1*100)}}%</strong></div>
+<div class="card"><small>Precision</small><strong>{{'%.2f'|format(meta.metrics.precision*100)}}%</strong></div>
+<div class="card"><small>Accuracy</small><strong>{{'%.2f'|format(meta.metrics.accuracy*100)}}%</strong></div></div>
+<section class="panel"><h2>Model Performance</h2>
+<p>Accuracy <b>{{'%.2f'|format(meta.metrics.accuracy*100)}}%</b> · Precision <b>{{'%.2f'|format(meta.metrics.precision*100)}}%</b> · Recall <b>{{'%.2f'|format(meta.metrics.recall*100)}}%</b> · F1 <b>{{'%.2f'|format(meta.metrics.f1*100)}}%</b></p>
+<p>RUL cutoff: {{meta.rul_cutoff_cycles}} cycles · Sequence: {{meta.sequence_length}} readings · Threshold: {{'%.0f'|format(meta.threshold*100)}}%</p></section>
+<section class="panel"><h2>Test an Engine</h2><div class="engines">
+{% for i in range(1,101) %}<a class="engine" href="/machine/{{i}}">Engine {{i}}</a>{% endfor %}
+</div></section></main></body></html>

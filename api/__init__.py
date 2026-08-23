@@ -1,0 +1,1 @@
+"""MechSense FastAPI package."""

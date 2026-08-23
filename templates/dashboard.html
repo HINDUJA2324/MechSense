@@ -1,0 +1,1941 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard · MechSense{% endblock %}
+{% block heading %}Machine Intelligence{% endblock %}
+
+{% block content %}
+
+<style>
+.ms-dashboard {
+    display: grid;
+    gap: 14px;
+}
+
+.ms-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 22px;
+    border: 1px solid #1d2b40;
+    border-radius: 15px;
+    background:
+        radial-gradient(circle at 85% 15%, rgba(25,214,255,.10), transparent 32%),
+        linear-gradient(145deg,#0e1827,#080f1a);
+}
+
+.ms-hero h2 {
+    font-size: 24px;
+    margin: 5px 0;
+}
+
+.ms-hero p {
+    margin: 0;
+    color: #71829b;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.ms-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.ms-kpis {
+    display: grid;
+    grid-template-columns: repeat(5,1fr);
+    gap: 10px;
+}
+
+.ms-kpi {
+    padding: 14px;
+    border: 1px solid #1c2a3e;
+    border-radius: 12px;
+    background: #0b1522;
+    min-height: 84px;
+}
+
+.ms-kpi span {
+    display: block;
+    color: #71819a;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 800;
+}
+
+.ms-kpi strong {
+    display: block;
+    font-size: 23px;
+    margin: 7px 0 2px;
+    color: #eef4ff;
+}
+
+.ms-kpi em {
+    font-style: normal;
+    color: #64748b;
+    font-size: 8px;
+}
+
+.ms-kpi.good { border-left: 3px solid #39d98a; }
+.ms-kpi.warn { border-left: 3px solid #ffbf47; }
+.ms-kpi.bad { border-left: 3px solid #ff5964; }
+.ms-kpi.cyan { border-left: 3px solid #19d6ff; }
+.ms-kpi.purple { border-left: 3px solid #8d6cff; }
+
+.ms-panel {
+    border: 1px solid #1c2a3e;
+    border-radius: 14px;
+    background: linear-gradient(145deg,#0d1725,#09111d);
+    padding: 17px;
+    min-width: 0;
+}
+
+.ms-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.ms-head h2 {
+    font-size: 14px;
+    margin: 0;
+}
+
+.ms-head p {
+    font-size: 9px;
+    color: #647590;
+    margin: 5px 0 0;
+}
+
+.ms-tag {
+    font-size: 7px;
+    padding: 4px 7px;
+    border-radius: 5px;
+    background: #101d2e;
+    color: #7f90a8;
+    border: 1px solid #203049;
+    white-space: nowrap;
+}
+
+.ms-three {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 12px;
+}
+
+.ms-donut {
+    height: 185px;
+    position: relative;
+    margin: 8px auto 2px;
+    max-width: 260px;
+}
+
+.ms-donut canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.ms-center {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    pointer-events: none;
+}
+
+.ms-center b {
+    font-size: 25px;
+    color: #eef4ff;
+}
+
+.ms-center small {
+    font-size: 8px;
+    color: #687993;
+    margin-top: 2px;
+}
+
+.ms-legend {
+    display: grid;
+    gap: 7px;
+    margin-top: 6px;
+}
+
+.ms-leg {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #aab7ca;
+}
+
+.ms-leg span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.ms-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.ms-green { background: #39d98a; }
+.ms-amber { background: #ffbf47; }
+.ms-red { background: #ff5964; }
+.ms-purple { background: #8d6cff; }
+.ms-cyan { background: #19d6ff; }
+
+.ms-main {
+    display: grid;
+    grid-template-columns: minmax(0,1.65fr) minmax(300px,.9fr);
+    gap: 12px;
+}
+
+/* TEMPERATURE GRAPH */
+.ms-chart {
+    height: 310px;
+    position: relative;
+    margin-top: 8px;
+}
+
+.ms-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.ms-empty {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: #667791;
+    font-size: 10px;
+}
+
+.ms-risk-list {
+    display: grid;
+    gap: 0;
+    margin-top: 8px;
+}
+
+.ms-risk-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 0;
+    border-bottom: 1px solid #182438;
+    text-decoration: none;
+    color: #dfe7f5;
+}
+
+.ms-risk-row:last-child {
+    border-bottom: 0;
+}
+
+.ms-risk-rank {
+    color: #63728a;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.ms-risk-machine {
+    min-width: 0;
+}
+
+.ms-risk-machine b {
+    font-size: 10px;
+}
+
+.ms-risk-sub {
+    margin-top: 5px;
+    color: #697993;
+    font-size: 8px;
+}
+
+.ms-risk-score {
+    font-size: 11px;
+    font-weight: 900;
+    color: #ff5964;
+    white-space: nowrap;
+}
+
+.ms-status {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 3px 5px;
+    border-radius: 5px;
+    font-size: 7px;
+    text-transform: uppercase;
+}
+
+.ms-status.critical {
+    background: rgba(255,89,100,.12);
+    color: #ff5964;
+}
+
+.ms-status.warning {
+    background: rgba(255,191,71,.12);
+    color: #ffbf47;
+}
+
+.ms-status.healthy {
+    background: rgba(57,217,138,.12);
+    color: #39d98a;
+}
+
+.ms-bottom {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 10px;
+}
+
+.ms-small {
+    padding: 14px;
+    border: 1px solid #1c2a3e;
+    border-radius: 12px;
+    background: #0b1522;
+}
+
+.ms-small span {
+    display: block;
+    color: #71819a;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.ms-small b {
+    display: block;
+    font-size: 17px;
+    margin-top: 7px;
+}
+
+.ms-small small {
+    display: block;
+    color: #62718a;
+    font-size: 8px;
+    margin-top: 3px;
+}
+
+@media(max-width:1050px) {
+    .ms-kpis {
+        grid-template-columns: repeat(3,1fr);
+    }
+
+    .ms-three {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .ms-main {
+        grid-template-columns: 1fr;
+    }
+
+    .ms-bottom {
+        grid-template-columns: repeat(2,1fr);
+    }
+}
+
+@media(max-width:700px) {
+    .ms-hero {
+        display: block;
+    }
+
+    .ms-actions {
+        justify-content: flex-start;
+        margin-top: 12px;
+    }
+
+    .ms-kpis,
+    .ms-three,
+    .ms-bottom {
+        grid-template-columns: 1fr;
+    }
+
+    .ms-chart {
+        height: 260px;
+    }
+}
+</style>
+
+
+<div class="ms-dashboard">
+
+    <!-- HERO -->
+    <section class="ms-hero">
+
+        <div>
+            <span class="eyebrow">
+                MECHSENSE · FLEET INTELLIGENCE
+            </span>
+
+            <h2>
+                PREDICT PROBLEMS BEFORE PRODUCTION STOPS
+            </h2>
+
+            <p>
+                Real-time machine health, failure risk and
+                temperature behavior from the active dataset.
+            </p>
+        </div>
+
+        <div class="ms-actions">
+
+            <button class="btn primary" id="refreshBtn">
+                ↻ Refresh
+            </button>
+
+            <a class="btn secondary" href="/lstm-testing">
+                Upload CSV
+            </a>
+
+        </div>
+
+    </section>
+
+
+    <!-- KPI -->
+    <section class="ms-kpis">
+
+        <div class="ms-kpi cyan">
+            <span>Total Machines</span>
+            <strong id="kpiMachines">
+                {{data.machines}}
+            </strong>
+            <em id="kpiSource">
+                {{'Uploaded CSV' if data.dataSource == 'uploaded'
+                else 'Default C-MAPSS FD001'}}
+            </em>
+        </div>
+
+        <div class="ms-kpi good">
+            <span>Healthy</span>
+            <strong id="kpiHealthy">
+                {{data.counts.healthy}}
+            </strong>
+            <em>Operating normally</em>
+        </div>
+
+        <div class="ms-kpi warn">
+            <span>Warning</span>
+            <strong id="kpiWarning">
+                {{data.counts.warning}}
+            </strong>
+            <em>Monitor closely</em>
+        </div>
+
+        <div class="ms-kpi bad">
+            <span>Critical</span>
+            <strong id="kpiCritical">
+                {{data.counts.critical}}
+            </strong>
+            <em>Immediate attention</em>
+        </div>
+
+        <div class="ms-kpi purple">
+            <span>Average Health</span>
+            <strong id="kpiHealth">—</strong>
+            <em>Active fleet score</em>
+        </div>
+
+    </section>
+
+
+    <!-- DONUTS -->
+    <section class="ms-three">
+
+        <div class="ms-panel">
+
+            <div class="ms-head">
+                <div>
+                    <h2>Fleet Health Distribution</h2>
+                    <p>Current machine status</p>
+                </div>
+
+                <span class="ms-tag">LIVE</span>
+            </div>
+
+            <div class="ms-donut">
+
+                <canvas id="fleetChart"></canvas>
+
+                <div class="ms-center">
+                    <b id="fleetTotal">
+                        {{data.machines}}
+                    </b>
+                    <small>Total machines</small>
+                </div>
+
+            </div>
+
+            <div class="ms-legend">
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-green"></i>
+                        Healthy
+                    </span>
+                    <b id="lgHealthy">
+                        {{data.counts.healthy}}
+                    </b>
+                </div>
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-amber"></i>
+                        Warning
+                    </span>
+                    <b id="lgWarning">
+                        {{data.counts.warning}}
+                    </b>
+                </div>
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-red"></i>
+                        Critical
+                    </span>
+                    <b id="lgCritical">
+                        {{data.counts.critical}}
+                    </b>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="ms-panel">
+
+            <div class="ms-head">
+
+                <div>
+                    <h2>Failure Risk Distribution</h2>
+                    <p>Low, medium and high risk</p>
+                </div>
+
+                <span class="ms-tag">MODEL</span>
+
+            </div>
+
+            <div class="ms-donut">
+
+                <canvas id="riskChart"></canvas>
+
+                <div class="ms-center">
+                    <b id="riskHigh">—</b>
+                    <small>High risk</small>
+                </div>
+
+            </div>
+
+            <div class="ms-legend">
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-green"></i>
+                        Low risk
+                    </span>
+                    <b id="riskLow">—</b>
+                </div>
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-amber"></i>
+                        Medium risk
+                    </span>
+                    <b id="riskMedium">—</b>
+                </div>
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-red"></i>
+                        High risk
+                    </span>
+                    <b id="riskHighLegend">—</b>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="ms-panel">
+
+            <div class="ms-head">
+
+                <div>
+                    <h2>Maintenance Priority</h2>
+                    <p>Recommended action queue</p>
+                </div>
+
+                <span class="ms-tag">ACTION</span>
+
+            </div>
+
+            <div class="ms-donut">
+
+                <canvas id="priorityChart"></canvas>
+
+                <div class="ms-center">
+                    <b id="priorityCount">
+                        {{data.counts.critical}}
+                    </b>
+                    <small>Urgent</small>
+                </div>
+
+            </div>
+
+            <div class="ms-legend">
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-red"></i>
+                        Urgent
+                    </span>
+                    <b id="priorityUrgent">
+                        {{data.counts.critical}}
+                    </b>
+                </div>
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-amber"></i>
+                        High
+                    </span>
+                    <b id="priorityHigh">
+                        {{data.counts.warning}}
+                    </b>
+                </div>
+
+                <div class="ms-leg">
+                    <span>
+                        <i class="ms-dot ms-green"></i>
+                        Routine
+                    </span>
+                    <b id="priorityRoutine">
+                        {{data.counts.healthy}}
+                    </b>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- MAIN -->
+    <section class="ms-main">
+
+        <!-- TEMPERATURE HEALTH TREND -->
+        <div class="ms-panel">
+
+            <div class="ms-head">
+
+                <div>
+                    <h2>
+                        Temperature Health Trend
+                    </h2>
+
+                    <p id="trendSubtitle">
+                        Actual process temperature readings
+                        from the active dataset
+                    </p>
+                </div>
+
+                <span class="ms-tag" id="trendUpdated">
+                    LIVE
+                </span>
+
+            </div>
+
+            <div class="ms-chart">
+
+                <canvas id="temperatureChart"></canvas>
+
+                <div
+                    id="temperatureEmpty"
+                    class="ms-empty"
+                    style="display:none;">
+                    Temperature readings are not available.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- HIGH RISK -->
+        <div class="ms-panel">
+
+            <div class="ms-head">
+
+                <div>
+                    <h2>
+                        Top High-Risk Machines
+                    </h2>
+
+                    <p>
+                        Fastest response required
+                    </p>
+                </div>
+
+                <a
+                    class="btn secondary"
+                    href="/machines">
+                    View all
+                </a>
+
+            </div>
+
+            <div
+                class="ms-risk-list"
+                id="riskTable">
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- BOTTOM -->
+    <section class="ms-bottom">
+
+        <div class="ms-small">
+            <span>Dataset Records</span>
+            <b id="datasetRecords">
+                {{data.testReadings}}
+            </b>
+            <small>Rows analyzed</small>
+        </div>
+
+        <div class="ms-small">
+            <span>Prediction Engine</span>
+            <b>PyTorch LSTM</b>
+            <small>AI prediction engine</small>
+        </div>
+
+        <div class="ms-small">
+            <span>System Status</span>
+            <b>Online</b>
+            <small>Prediction engine connected</small>
+        </div>
+
+        <div class="ms-small">
+            <span>Data Source</span>
+            <b id="dataSourceLabel">
+                {{'Uploaded CSV' if data.dataSource == 'uploaded'
+                else 'Default dataset'}}
+            </b>
+            <small>Active dashboard source</small>
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+
+let fleetChart = null;
+let riskChart = null;
+let priorityChart = null;
+let temperatureChart = null;
+
+const initial = {{ data|tojson }};
+
+
+/* =========================================================
+   SAFE NUMBER
+   ========================================================= */
+
+function num(value) {
+
+    const n = Number(value);
+
+    return Number.isFinite(n) ? n : null;
+
+}
+
+
+/* =========================================================
+   DOUGHNUT
+   ========================================================= */
+
+function createDoughnut(
+    canvasId,
+    values,
+    labels,
+    colors
+) {
+
+    const canvas =
+        document.getElementById(canvasId);
+
+    if (!canvas) {
+        return null;
+    }
+
+    const existing =
+        Chart.getChart(canvas);
+
+    if (existing) {
+        existing.destroy();
+    }
+
+    return new Chart(canvas, {
+
+        type: 'doughnut',
+
+        data: {
+
+            labels: labels,
+
+            datasets: [{
+
+                data: values,
+
+                backgroundColor: colors,
+
+                borderColor: '#09111d',
+
+                borderWidth: 3,
+
+                hoverOffset: 8
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            cutout: '72%',
+
+            animation: {
+                duration: 700
+            },
+
+            plugins: {
+
+                legend: {
+                    display: false
+                },
+
+                tooltip: {
+
+                    padding: 12,
+
+                    callbacks: {
+
+                        label: function(context) {
+
+                            return (
+                                ' ' +
+                                context.label +
+                                ': ' +
+                                context.raw
+                            );
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
+
+/* =========================================================
+   RISK BUCKETS
+   ========================================================= */
+
+function calculateRiskBuckets(rows) {
+
+    let low = 0;
+    let medium = 0;
+    let high = 0;
+
+    (rows || []).forEach(function(machine) {
+
+        let probability =
+            Number(
+                machine.failureProbability
+                ?? machine.failure_probability
+                ?? machine.risk
+                ?? 0
+            );
+
+        if (probability > 1) {
+            probability = probability / 100;
+        }
+
+        const percent =
+            probability * 100;
+
+        if (percent >= 60) {
+            high++;
+        }
+        else if (percent >= 30) {
+            medium++;
+        }
+        else {
+            low++;
+        }
+
+    });
+
+    return [
+        low,
+        medium,
+        high
+    ];
+
+}
+
+
+/* =========================================================
+   NORMALIZE TEMPERATURE TREND
+   ========================================================= */
+
+function normalizeTrend(raw) {
+
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    const result = [];
+
+    raw.forEach(function(row, index) {
+
+        /*
+         * Supports all common names used by the
+         * MechSense Python backend.
+         */
+
+        let cycle =
+            row.cycle ??
+            row.Cycle ??
+            row.CYCLE ??
+            row.time ??
+            row.Time ??
+            row.index ??
+            index + 1;
+
+        let temperature =
+            row.sensor_4 ??
+            row.Sensor_4 ??
+            row.sensor4 ??
+            row.sensor4_value ??
+            row.temperature ??
+            row.Temperature ??
+            row.temp ??
+            row.TemperatureValue ??
+            row.value ??
+            row.y;
+
+        const numericTemperature =
+            Number(temperature);
+
+        if (
+            Number.isFinite(numericTemperature)
+        ) {
+
+            result.push({
+
+                cycle: cycle,
+
+                temperature:
+                    numericTemperature,
+
+                anomaly: Boolean(row.anomaly),
+
+                direction:
+                    row.direction ??
+                    'stable',
+
+                zScore:
+                    Number(row.zScore ?? 0)
+
+            });
+
+        }
+
+    });
+
+    return result;
+
+}
+
+
+/* =========================================================
+   FIND TREND INSIDE API RESPONSE
+   ========================================================= */
+
+function findTrend(data) {
+
+    if (!data) {
+        return [];
+    }
+
+    const possibleSources = [
+
+        data.trend,
+
+        data.temperatureTrend,
+
+        data.temperature_trend,
+
+        data.temperature,
+
+        data.temperatures,
+
+        data.sensor4,
+
+        data.sensor_4,
+
+        data.readings,
+
+        data.history,
+
+        data.historical
+
+    ];
+
+    for (
+        const source of possibleSources
+    ) {
+
+        const normalized =
+            normalizeTrend(source);
+
+        if (normalized.length > 0) {
+
+            return normalized;
+
+        }
+
+    }
+
+    return [];
+
+}
+
+
+/* =========================================================
+   TEMPERATURE GRAPH
+   ========================================================= */
+
+function createTemperatureChart(rows) {
+
+    const canvas =
+        document.getElementById(
+            'temperatureChart'
+        );
+
+    const empty =
+        document.getElementById(
+            'temperatureEmpty'
+        );
+
+    if (!canvas) {
+        return;
+    }
+
+    const existing =
+        Chart.getChart(canvas);
+
+    if (existing) {
+        existing.destroy();
+    }
+
+
+    const trend =
+        normalizeTrend(rows);
+
+
+    if (!trend.length) {
+
+        canvas.style.display =
+            'none';
+
+        if (empty) {
+            empty.style.display =
+                'grid';
+        }
+
+        return;
+
+    }
+
+
+    canvas.style.display =
+        'block';
+
+    if (empty) {
+        empty.style.display =
+            'none';
+    }
+
+
+    const labels =
+        trend.map(function(point) {
+
+            return point.cycle;
+
+        });
+
+
+    const values =
+        trend.map(function(point) {
+
+            return point.temperature;
+
+        });
+
+
+    temperatureChart =
+        new Chart(
+            canvas,
+            {
+
+                type: 'line',
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [{
+
+                        label:
+                            'Temperature',
+
+                        data:
+                            values,
+
+                        borderColor:
+                            '#19d6ff',
+
+                        backgroundColor:
+                            'transparent',
+
+                        fill:
+                            false,
+
+                        borderWidth:
+                            3,
+
+                        tension:
+                            0.28,
+
+                        pointRadius:
+                            trend.map(function(point) {
+                                return point.anomaly ? 5 : (values.length > 60 ? 1.5 : 3);
+                            }),
+
+                        pointHoverRadius:
+                            6,
+
+                        pointBackgroundColor:
+                            trend.map(function(point) {
+                                return point.anomaly ? '#ff4f96' : '#19d6ff';
+                            }),
+
+                        pointBorderColor:
+                            trend.map(function(point) {
+                                return point.anomaly ? '#ff4f96' : '#19d6ff';
+                            })
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive:
+                        true,
+
+                    maintainAspectRatio:
+                        false,
+
+                    interaction: {
+
+                        mode:
+                            'index',
+
+                        intersect:
+                            false
+
+                    },
+
+                    plugins: {
+
+                        legend: {
+                            display: false
+                        },
+
+                        tooltip: {
+
+                            padding: 12,
+
+                            callbacks: {
+
+                                label:
+                                    function(context) {
+
+                                        const point = trend[context.dataIndex];
+                                        const abnormal = point && point.anomaly;
+                                        const direction = point ? point.direction : 'stable';
+
+                                        return (
+                                            ' Temperature: ' +
+                                            Number(context.raw).toFixed(2) +
+                                            (abnormal ? ' · ABNORMAL ' + direction.toUpperCase() : ' · ' + direction)
+                                        );
+
+                                    }
+
+                            }
+
+                        }
+
+                    },
+
+                    scales: {
+
+                        x: {
+
+                            grid: {
+                                display: false
+                            },
+
+                            ticks: {
+
+                                color:
+                                    '#72819a',
+
+                                maxTicksLimit:
+                                    10,
+
+                                font: {
+                                    size: 9
+                                }
+
+                            },
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    'Cycle',
+
+                                color:
+                                    '#647590',
+
+                                font: {
+                                    size: 9
+                                }
+
+                            }
+
+                        },
+
+                        y: {
+
+                            grid: {
+
+                                color:
+                                    'rgba(255,255,255,.07)'
+
+                            },
+
+                            ticks: {
+
+                                color:
+                                    '#9ba9bd',
+
+                                maxTicksLimit:
+                                    7,
+
+                                font: {
+                                    size: 9
+                                }
+
+                            },
+
+                            title: {
+
+                                display:
+                                    true,
+
+                                text:
+                                    'Temperature',
+
+                                color:
+                                    '#647590',
+
+                                font: {
+                                    size: 9
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   TRY TO LOAD TEMPERATURE DATA FROM API
+   ========================================================= */
+
+async function loadTemperatureTrend(data) {
+
+    /*
+     * First use data already returned by /api/dashboard.
+     */
+
+    let trend =
+        findTrend(data);
+
+    if (trend.length > 0) {
+
+        createTemperatureChart(trend);
+
+        return trend;
+
+    }
+
+
+    /*
+     * If dashboard response does not contain trend,
+     * try the common trend endpoints.
+     */
+
+    const endpoints = [
+
+        '/api/temperature-trend',
+
+        '/api/trend',
+
+        '/api/dashboard/trend'
+
+    ];
+
+
+    for (
+        const endpoint of endpoints
+    ) {
+
+        try {
+
+            const response =
+                await fetch(
+                    endpoint,
+                    {
+                        cache: 'no-store'
+                    }
+                );
+
+
+            if (!response.ok) {
+                continue;
+            }
+
+
+            const result =
+                await response.json();
+
+
+            trend =
+                findTrend(result);
+
+
+            if (trend.length > 0) {
+
+                createTemperatureChart(
+                    trend
+                );
+
+                return trend;
+
+            }
+
+        }
+        catch(error) {
+
+            console.log(
+                'Trend endpoint unavailable:',
+                endpoint
+            );
+
+        }
+
+    }
+
+
+    /*
+     * Nothing found.
+     */
+
+    createTemperatureChart([]);
+
+    return [];
+
+}
+
+
+/* =========================================================
+   HIGH RISK MACHINES
+   ========================================================= */
+
+function renderRiskMachines(rows) {
+
+    const container =
+        document.getElementById(
+            'riskTable'
+        );
+
+    if (!container) {
+        return;
+    }
+
+
+    const sorted =
+        [...(rows || [])]
+        .sort(function(a,b) {
+
+            return (
+                Number(
+                    b.failureProbability
+                    ??
+                    b.failure_probability
+                    ??
+                    0
+                )
+                -
+                Number(
+                    a.failureProbability
+                    ??
+                    a.failure_probability
+                    ??
+                    0
+                )
+            );
+
+        })
+        .slice(0,7);
+
+
+    if (!sorted.length) {
+
+        container.innerHTML =
+            '<div class="ms-empty">' +
+            'No machine records available.' +
+            '</div>';
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        sorted.map(
+            function(machine,index) {
+
+                let probability =
+                    Number(
+                        machine.failureProbabilityPct
+                        ??
+                        machine.failure_probability_pct
+                        ??
+                        (
+                            Number(
+                                machine.failureProbability
+                                ??
+                                machine.failure_probability
+                                ??
+                                0
+                            ) * 100
+                        )
+                    );
+
+
+                if (
+                    probability <= 1
+                ) {
+
+                    probability *= 100;
+
+                }
+
+
+                const status =
+                    String(
+                        machine.status ||
+                        'healthy'
+                    ).toLowerCase();
+
+
+                const engineId =
+                    machine.engineId
+                    ??
+                    machine.engine_id
+                    ??
+                    machine.id
+                    ??
+                    index + 1;
+
+
+                return (
+
+                    '<a ' +
+                    'class="ms-risk-row" ' +
+                    'href="/analyze?engine=' +
+                    encodeURIComponent(
+                        engineId
+                    ) +
+                    '">' +
+
+                        '<span class="ms-risk-rank">' +
+                            String(index + 1)
+                            .padStart(2,'0') +
+                        '</span>' +
+
+                        '<div class="ms-risk-machine">' +
+
+                            '<div>' +
+
+                                '<b>MS-' +
+                                    engineId +
+                                '</b>' +
+
+                                '<span class="ms-status ' +
+                                    status +
+                                '">' +
+                                    status.toUpperCase() +
+                                '</span>' +
+
+                            '</div>' +
+
+                            '<div class="ms-risk-sub">' +
+
+                                (
+                                    status === 'critical'
+                                    ? 'Immediate maintenance required'
+                                    :
+                                    status === 'warning'
+                                    ? 'Inspection recommended'
+                                    :
+                                    'Normal operation'
+                                ) +
+
+                            '</div>' +
+
+                        '</div>' +
+
+                        '<strong class="ms-risk-score">' +
+                            probability.toFixed(2) +
+                            '%' +
+                        '</strong>' +
+
+                    '</a>'
+
+                );
+
+            }
+        )
+        .join('');
+
+}
+
+
+/* =========================================================
+   UPDATE DASHBOARD
+   ========================================================= */
+
+async function updateDashboard(data) {
+
+    const counts =
+        data.counts || {
+
+            healthy: 0,
+            warning: 0,
+            critical: 0
+
+        };
+
+
+    const machines =
+        data.engines ||
+        data.machinesList ||
+        data.machineData ||
+        data.rows ||
+        [];
+
+
+    document.getElementById(
+        'kpiMachines'
+    ).textContent =
+        data.machines || machines.length || 0;
+
+
+    document.getElementById(
+        'kpiHealthy'
+    ).textContent =
+        counts.healthy || 0;
+
+
+    document.getElementById(
+        'kpiWarning'
+    ).textContent =
+        counts.warning || 0;
+
+
+    document.getElementById(
+        'kpiCritical'
+    ).textContent =
+        counts.critical || 0;
+
+
+    const averageHealth =
+        machines.length
+        ? machines.reduce(
+            function(total,machine) {
+
+                return (
+                    total +
+                    Number(
+                        machine.healthScore
+                        ??
+                        machine.health_score
+                        ??
+                        0
+                    )
+                );
+
+            },
+            0
+        ) / machines.length
+        : 0;
+
+
+    document.getElementById(
+        'kpiHealth'
+    ).textContent =
+        averageHealth.toFixed(1) + '%';
+
+
+    /* Fleet */
+
+    document.getElementById(
+        'fleetTotal'
+    ).textContent =
+        data.machines || machines.length || 0;
+
+
+    document.getElementById(
+        'lgHealthy'
+    ).textContent =
+        counts.healthy || 0;
+
+
+    document.getElementById(
+        'lgWarning'
+    ).textContent =
+        counts.warning || 0;
+
+
+    document.getElementById(
+        'lgCritical'
+    ).textContent =
+        counts.critical || 0;
+
+
+    fleetChart =
+        createDoughnut(
+            'fleetChart',
+
+            [
+                counts.healthy || 0,
+                counts.warning || 0,
+                counts.critical || 0
+            ],
+
+            [
+                'Healthy',
+                'Warning',
+                'Critical'
+            ],
+
+            [
+                '#39d98a',
+                '#ffbf47',
+                '#ff5964'
+            ]
+        );
+
+
+    /* Risk */
+
+    const buckets =
+        calculateRiskBuckets(
+            machines
+        );
+
+
+    document.getElementById(
+        'riskLow'
+    ).textContent =
+        buckets[0];
+
+
+    document.getElementById(
+        'riskMedium'
+    ).textContent =
+        buckets[1];
+
+
+    document.getElementById(
+        'riskHigh'
+    ).textContent =
+        buckets[2];
+
+
+    document.getElementById(
+        'riskHighLegend'
+    ).textContent =
+        buckets[2];
+
+
+    riskChart =
+        createDoughnut(
+            'riskChart',
+
+            buckets,
+
+            [
+                'Low risk',
+                'Medium risk',
+                'High risk'
+            ],
+
+            [
+                '#39d98a',
+                '#ffbf47',
+                '#ff5964'
+            ]
+        );
+
+
+    /* Priority */
+
+    document.getElementById(
+        'priorityUrgent'
+    ).textContent =
+        counts.critical || 0;
+
+
+    document.getElementById(
+        'priorityHigh'
+    ).textContent =
+        counts.warning || 0;
+
+
+    document.getElementById(
+        'priorityRoutine'
+    ).textContent =
+        counts.healthy || 0;
+
+
+    document.getElementById(
+        'priorityCount'
+    ).textContent =
+        counts.critical || 0;
+
+
+    priorityChart =
+        createDoughnut(
+            'priorityChart',
+
+            [
+                counts.critical || 0,
+                counts.warning || 0,
+                counts.healthy || 0
+            ],
+
+            [
+                'Urgent',
+                'High',
+                'Routine'
+            ],
+
+            [
+                '#ff5964',
+                '#ffbf47',
+                '#39d98a'
+            ]
+        );
+
+
+    /* Temperature */
+
+    await loadTemperatureTrend(
+        data
+    );
+
+
+    /* Risk machines */
+
+    renderRiskMachines(
+        machines
+    );
+
+
+    /* Bottom */
+
+    document.getElementById(
+        'datasetRecords'
+    ).textContent =
+        data.testReadings || 0;
+
+
+    document.getElementById(
+        'dataSourceLabel'
+    ).textContent =
+        data.dataSource === 'uploaded'
+        ? 'Uploaded CSV'
+        : 'Default dataset';
+
+
+    document.getElementById(
+        'trendUpdated'
+    ).textContent =
+        'UPDATED ' +
+        new Date().toLocaleTimeString();
+
+}
+
+
+/* =========================================================
+   REFRESH
+   ========================================================= */
+
+async function refreshDashboard() {
+
+    const button =
+        document.getElementById(
+            'refreshBtn'
+        );
+
+    button.disabled = true;
+
+
+    try {
+
+        const response =
+            await fetch(
+                '/api/dashboard',
+                {
+                    cache: 'no-store'
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                'Dashboard API returned ' +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        await updateDashboard(
+            data
+        );
+
+    }
+    catch(error) {
+
+        console.error(
+            'Dashboard refresh failed:',
+            error
+        );
+
+    }
+    finally {
+
+        button.disabled = false;
+
+    }
+
+}
+
+
+/* =========================================================
+   INITIAL LOAD
+   ========================================================= */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function() {
+
+        updateDashboard(
+            initial
+        );
+
+
+        document
+            .getElementById('refreshBtn')
+            .addEventListener(
+                'click',
+                refreshDashboard
+            );
+
+
+        setInterval(
+            refreshDashboard,
+            30000
+        );
+
+    }
+);
+
+</script>
+
+{% endblock %}

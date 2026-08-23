@@ -1,0 +1,27 @@
+{
+  "model": "HistGradientBoostingRegressor",
+  "features": [
+    "op_setting_1",
+    "op_setting_2",
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_6",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_17",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "sequence_length": 30,
+  "rul_cap": 125,
+  "validation_mae": 13.637595227055892,
+  "test_mae": 13.121706067639218,
+  "feature_strategy": "last, mean, std and linear trend over latest 30 cycles"
+}
